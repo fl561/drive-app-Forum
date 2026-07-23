@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Forum</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #111; color: #eee; }
+    .thread { border: 1px solid #333; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+    .thread h2 { margin: 0; }
+    .thread small { color: #888; }
+    .btn { background: #0ea5e9; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+    .btn:hover { background: #0284c7; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; background: #222; border: 1px solid #444; color: #eee; border-radius: 4px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🌍 World Forum</h1>
+  <div id="auth-status">Loading...</div>
+  <hr />
+
+  <div id="new-thread-form">
+    <h3>Start a new thread</h3>
+    <input type="text" id="thread-title" placeholder="Thread title" />
+    <textarea id="thread-content" placeholder="Write your first post..." rows="3"></textarea>
+    <input type="text" id="author-name" placeholder="Your name" />
+    <button class="btn" id="create-thread-btn">Create Thread</button>
+  </div>
+  <hr />
+
+  <div id="threads-container">
+    <p>Loading threads...</p>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://divcsisxjrbruduyophx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadThreads() {
+      const container = document.getElementById('threads-container');
+      const { data: threads, error } = await supabase
+        .from('threads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        container.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+        return;
+      }
+      if (!threads || threads.length === 0) {
+        container.innerHTML = '<p>No threads yet. Start one above!</p>';
+        return;
+      }
+
+      container.innerHTML = threads.map(t => `
+        <div class="thread">
+          <h2>${t.title}</h2>
+          <p>${t.content || ''}</p>
+          <small>By ${t.author_name || 'Anonymous'} · ${new Date(t.created_at).toLocaleString()}</small>
+          <br />
+          <button class="btn" onclick="viewThread('${t.id}')">View Replies</button>
+          <div id="replies-${t.id}"></div>
+        </div>
+      `).join('');
+    }
+
+    window.viewThread = async function(threadId) {
+      const container = document.getElementById(`replies-${threadId}`);
+      if (!container) return;
+
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        const { data: posts, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('thread_id', threadId)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          container.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+          return;
+        }
+        if (!posts || posts.length === 0) {
+          container.innerHTML = '<p>No replies yet.</p>';
+        } else {
+          container.innerHTML = posts.map(p => `
+            <div style="border-left:2px solid #0ea5e9; padding-left:1rem; margin:0.5rem 0;">
+              <p>${p.content}</p>
+              <small>By ${p.author_name || 'Anonymous'} · ${new Date(p.created_at).toLocaleString()}</small>
+            </div>
+          `).join('');
+        }
+
+        const form = document.createElement('div');
+        form.innerHTML = `
+          <hr />
+          <input type="text" id="reply-author-${threadId}" placeholder="Your name" />
+          <textarea id="reply-content-${threadId}" placeholder="Write a reply..." rows="2"></textarea>
+          <button class="btn" onclick="addReply('${threadId}')">Post Reply</button>
+        `;
+        container.appendChild(form);
+      } else {
+        container.classList.add('hidden');
+      }
+    };
+
+    window.addReply = async function(threadId) {
+      const authorInput = document.getElementById(`reply-author-${threadId}`);
+      const contentInput = document.getElementById(`reply-content-${threadId}`);
+      const author = authorInput.value.trim() || 'Anonymous';
+      const content = contentInput.value.trim();
+      if (!content) { alert('Write something.'); return; }
+
+      const { error } = await supabase
+        .from('posts')
+        .insert([{ thread_id: parseInt(threadId), author_name: author, content: content }]);
+
+      if (error) { alert('❌ Error: ' + error.message); return; }
+
+      authorInput.value = '';
+      contentInput.value = '';
+      await viewThread(threadId);
+    };
+
+    document.getElementById('create-thread-btn').addEventListener('click', async function() {
+      const title = document.getElementById('thread-title').value.trim();
+      const content = document.getElementById('thread-content').value.trim();
+      const author = document.getElementById('author-name').value.trim() || 'Anonymous';
+      if (!title) { alert('Enter a title.'); return; }
+
+      const { error } = await supabase
+        .from('threads')
+        .insert([{ title, content, author_name: author }]);
+
+      if (error) { alert('❌ Error: ' + error.message); return; }
+
+      document.getElementById('thread-title').value = '';
+      document.getElementById('thread-content').value = '';
+      document.getElementById('author-name').value = '';
+      await loadThreads();
+    });
+
+    loadThreads();
+
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const status = document.getElementById('auth-status');
+      if (session) {
+        status.innerHTML = `✅ Logged in as ${session.user.email}`;
+      } else {
+        status.innerHTML = '🔓 Not logged in (you can still post anonymously)';
+      }
+    }
+    checkAuth();
+  </script>
+</body>
+</html>
