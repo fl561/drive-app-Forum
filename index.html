@@ -37,11 +37,11 @@
   <script>
     const SUPABASE_URL = 'https://divcsisxjrbruduyophx.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function loadThreads() {
       const container = document.getElementById('threads-container');
-      const { data: threads, error } = await supabase
+      const { data: threads, error } = await supabaseClient
         .from('threads')
         .select('*')
         .order('created_at', { ascending: false });
@@ -73,7 +73,7 @@
 
       if (container.classList.contains('hidden')) {
         container.classList.remove('hidden');
-        const { data: posts, error } = await supabase
+        const { data: posts, error } = await supabaseClient
           .from('posts')
           .select('*')
           .eq('thread_id', threadId)
@@ -114,7 +114,7 @@
       const content = contentInput.value.trim();
       if (!content) { alert('Write something.'); return; }
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('posts')
         .insert([{ thread_id: parseInt(threadId), author_name: author, content: content }]);
 
@@ -131,7 +131,7 @@
       const author = document.getElementById('author-name').value.trim() || 'Anonymous';
       if (!title) { alert('Enter a title.'); return; }
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('threads')
         .insert([{ title, content, author_name: author }]);
 
@@ -146,7 +146,7 @@
     loadThreads();
 
     async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       const status = document.getElementById('auth-status');
       if (session) {
         status.innerHTML = `✅ Logged in as ${session.user.email}`;
