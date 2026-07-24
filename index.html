@@ -196,22 +196,20 @@
     .reply-form button:hover { background: #2a3360; color: white; }
     .reply-form button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .skeleton-card {
-      background: #13172b;
-      border-radius: 16px;
-      padding: 1rem 1.2rem;
-      margin-bottom: 1rem;
-      border: 1px solid #2a2f4b;
+    .threads-loading {
+      text-align: center;
+      padding: 2rem;
+      color: #7a82a0;
     }
-    .skeleton-card .skeleton-line { height: 1rem; background: #1e2648; border-radius: 20px; margin-bottom: 0.5rem; }
-    .skeleton-card .skeleton-line:last-child { width: 60%; }
-    .skeleton-card .skeleton-line.medium { width: 80%; }
-    .skeleton-card .skeleton-line.small { width: 40%; }
+    .threads-loading i {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #38bdf8;
+    }
 
     .hidden { display: none !important; }
     .text-muted { color: #7a82a0; font-size: 0.85rem; }
-    .loading { text-align: center; padding: 2rem; color: #7a82a0; }
-    .loading i { font-size: 1.8rem; display: block; margin-bottom: 0.5rem; }
 
     @media (max-width: 480px) {
       .top-bar { flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
@@ -260,7 +258,19 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ----- NAME PERSISTENCE (SAVES EVERYWHERE) -----
+  // ============================================================
+  // INPUT SANITIZATION – BLOCKS HTML & SCRIPT TAGS
+  // ============================================================
+  function sanitizeInput(text) {
+    if (!text) return '';
+    const temp = document.createElement('div');
+    temp.textContent = text;
+    return temp.innerHTML;
+  }
+
+  // ============================================================
+  // NAME PERSISTENCE
+  // ============================================================
   function saveName(name) {
     if (name && name.trim()) {
       localStorage.setItem('forum_username', name.trim());
@@ -276,26 +286,22 @@
     return stored || 'Anonymous';
   }
 
-  // Save on input
   document.getElementById('author-name').addEventListener('input', function() {
     saveName(this.value);
   });
-
-  // Save on blur (in case they don't type but paste)
   document.getElementById('author-name').addEventListener('blur', function() {
     saveName(this.value);
   });
-
-  // Load on page load
   document.getElementById('author-name').value = loadName();
 
-  // Also save before posting (just to be safe)
   function ensureNameSaved() {
     const input = document.getElementById('author-name');
     saveName(input.value);
   }
 
-  // ----- REST OF THE CODE (UNCHANGED) -----
+  // ============================================================
+  // AVATAR & SOUND
+  // ============================================================
   function getAvatar(name) {
     const initial = name ? name.charAt(0).toUpperCase() : '?';
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1e2648&color=38bdf8&size=64&bold=true`;
@@ -319,6 +325,9 @@
     if (navigator.vibrate) navigator.vibrate(10);
   }
 
+  // ============================================================
+  // IMAGE UPLOAD
+  // ============================================================
   async function uploadImage(file, folder = 'threads') {
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = `${folder}/${fileName}`;
@@ -328,6 +337,9 @@
     return publicUrlData.publicUrl;
   }
 
+  // ============================================================
+  // STATUS MESSAGE
+  // ============================================================
   function setStatus(element, message, type = 'sending') {
     if (!element) return;
     element.textContent = message;
@@ -338,14 +350,23 @@
     }
   }
 
+  // ============================================================
+  // LOAD THREADS (with sanitization)
+  // ============================================================
   async function loadThreads() {
     const container = document.getElementById('threads-container');
     container.innerHTML = `
-      <div class="skeleton-card"><div class="skeleton-line"></div><div class="skeleton-line medium"></div><div class="skeleton-line small"></div></div>
-      <div class="skeleton-card"><div class="skeleton-line"></div><div class="skeleton-line medium"></div><div class="skeleton-line small"></div></div>
+      <div class="threads-loading">
+        <i class="fas fa-spinner fa-pulse"></i>
+        <span>Loading threads...</span>
+      </div>
     `;
 
-    const { data: threads, error } = await supabaseClient.from('threads').select('*').order('created_at', { ascending: false });
+    const { data: threads, error } = await supabaseClient
+      .from('threads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     if (error) {
       container.innerHTML = `<div class="thread-card" style="border-color:#f43f5e;"><p>❌ Error: ${error.message}</p></div>`;
       return;
@@ -355,7 +376,10 @@
     let totalReplies = 0;
     if (threads && threads.length > 0) {
       const threadIds = threads.map(t => t.id);
-      const { count } = await supabaseClient.from('posts').select('*', { count: 'exact', head: true }).in('thread_id', threadIds);
+      const { count } = await supabaseClient
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .in('thread_id', threadIds);
       if (count !== null) totalReplies = count;
     }
     document.getElementById('stat-replies').textContent = totalReplies;
@@ -368,21 +392,35 @@
     const userName = getUserName();
     let html = '';
     for (const t of threads) {
-      const { count: likeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
-      const { count: userLikeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id).eq('user_name', userName);
+      const { count: likeCount } = await supabaseClient
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('thread_id', t.id);
+      const { count: userLikeCount } = await supabaseClient
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('thread_id', t.id)
+        .eq('user_name', userName);
       const userLike = userLikeCount > 0;
-      const { count: replyCount } = await supabaseClient.from('posts').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
+      const { count: replyCount } = await supabaseClient
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('thread_id', t.id);
+
+      const safeTitle = sanitizeInput(t.title);
+      const safeContent = sanitizeInput(t.content || '');
+      const safeAuthor = sanitizeInput(t.author_name || 'Anonymous');
 
       const imageHtml = t.image_url ? `<img src="${t.image_url}" class="thread-image" alt="thread image" />` : '';
       html += `
         <div class="thread-card" data-thread-id="${t.id}">
           <div class="author">
-            <img src="${getAvatar(t.author_name || 'Anonymous')}" alt="" />
-            <span class="name">${t.author_name || 'Anonymous'}</span>
+            <img src="${getAvatar(safeAuthor)}" alt="" />
+            <span class="name">${safeAuthor}</span>
             <span class="time">${new Date(t.created_at).toLocaleString()}</span>
           </div>
-          <h2>${t.title}</h2>
-          <div class="content">${t.content || ''}</div>
+          <h2>${safeTitle}</h2>
+          <div class="content">${safeContent}</div>
           ${imageHtml}
           <div class="actions">
             <span class="like-toggle ${userLike ? 'liked' : ''}" data-thread="${t.id}" onclick="toggleLike('${t.id}')">
@@ -401,32 +439,52 @@
     container.innerHTML = html;
   }
 
+  // ============================================================
+  // LIKE
+  // ============================================================
   window.toggleLike = async function(threadId) {
     const userName = getUserName();
     const likeToggle = document.querySelector(`.like-toggle[data-thread="${threadId}"]`);
     if (!likeToggle) return;
 
-    const { data: existing } = await supabaseClient.from('likes').select('*').eq('thread_id', parseInt(threadId)).eq('user_name', userName);
+    const { data: existing } = await supabaseClient
+      .from('likes')
+      .select('*')
+      .eq('thread_id', parseInt(threadId))
+      .eq('user_name', userName);
 
     if (existing && existing.length > 0) {
-      const { error } = await supabaseClient.from('likes').delete().eq('thread_id', parseInt(threadId)).eq('user_name', userName);
+      const { error } = await supabaseClient
+        .from('likes')
+        .delete()
+        .eq('thread_id', parseInt(threadId))
+        .eq('user_name', userName);
       if (error) { alert('Error: ' + error.message); return; }
     } else {
-      const { error } = await supabaseClient.from('likes').insert([{ thread_id: parseInt(threadId), user_name: userName }]);
+      const { error } = await supabaseClient
+        .from('likes')
+        .insert([{ thread_id: parseInt(threadId), user_name: userName }]);
       if (error) { alert('Error: ' + error.message); return; }
       triggerHaptics();
       playPopSound();
     }
-    loadThreads();
+    await loadThreads();
   };
 
+  // ============================================================
+  // VIEW REPLIES (with sanitization)
+  // ============================================================
   window.viewThread = async function(threadId) {
     const container = document.getElementById(`replies-${threadId}`);
     if (!container) return;
 
     if (container.classList.contains('hidden')) {
       container.classList.remove('hidden');
-      const { data: posts, error } = await supabaseClient.from('posts').select('*').eq('thread_id', threadId).order('created_at', { ascending: true });
+      const { data: posts, error } = await supabaseClient
+        .from('posts')
+        .select('*')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
       if (error) {
         container.innerHTML = `<p style="color:#f43f5e;">❌ Error: ${error.message}</p>`;
         return;
@@ -436,17 +494,21 @@
       if (!posts || posts.length === 0) {
         html = '<p class="text-muted">No replies yet. Be the first!</p>';
       } else {
-        html = posts.map(p => `
-          <div class="reply-item">
-            <div class="author">
-              <img src="${getAvatar(p.author_name || 'Anonymous')}" alt="" />
-              <span class="name">${p.author_name || 'Anonymous'}</span>
-              <span class="time">${new Date(p.created_at).toLocaleString()}</span>
+        html = posts.map(p => {
+          const safeAuthor = sanitizeInput(p.author_name || 'Anonymous');
+          const safeContent = sanitizeInput(p.content);
+          return `
+            <div class="reply-item">
+              <div class="author">
+                <img src="${getAvatar(safeAuthor)}" alt="" />
+                <span class="name">${safeAuthor}</span>
+                <span class="time">${new Date(p.created_at).toLocaleString()}</span>
+              </div>
+              <div class="content">${safeContent}</div>
+              ${p.image_url ? `<img src="${p.image_url}" class="reply-image" />` : ''}
             </div>
-            <div class="content">${p.content}</div>
-            ${p.image_url ? `<img src="${p.image_url}" class="reply-image" />` : ''}
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       html += `
@@ -469,6 +531,9 @@
     }
   };
 
+  // ============================================================
+  // ADD REPLY (with sanitization)
+  // ============================================================
   window.addReply = async function(threadId) {
     const authorInput = document.getElementById(`reply-author-${threadId}`);
     const contentInput = document.getElementById(`reply-content-${threadId}`);
@@ -476,9 +541,12 @@
     const statusEl = document.getElementById(`reply-status-${threadId}`);
     const btn = document.querySelector(`#replies-${threadId} .reply-form button`);
 
-    const author = authorInput.value.trim() || 'Anonymous';
-    const content = contentInput.value.trim();
-    if (!content) { alert('Write something.'); return; }
+    const rawAuthor = authorInput.value.trim() || 'Anonymous';
+    const rawContent = contentInput.value.trim();
+    if (!rawContent) { alert('Write something.'); return; }
+
+    const author = sanitizeInput(rawAuthor);
+    const content = sanitizeInput(rawContent);
 
     btn.disabled = true;
     setStatus(statusEl, 'Sending...', 'sending');
@@ -494,12 +562,14 @@
       }
     }
 
-    const { error } = await supabaseClient.from('posts').insert([{
-      thread_id: parseInt(threadId),
-      author_name: author,
-      content: content,
-      image_url: imageUrl
-    }]);
+    const { error } = await supabaseClient
+      .from('posts')
+      .insert([{
+        thread_id: parseInt(threadId),
+        author_name: author,
+        content: content,
+        image_url: imageUrl
+      }]);
 
     if (error) {
       setStatus(statusEl, 'Failed: ' + error.message, 'error');
@@ -518,21 +588,30 @@
     triggerHaptics();
 
     await viewThread(threadId);
-    loadThreads();
+    await loadThreads();
     btn.disabled = false;
   };
 
+  // ============================================================
+  // CREATE THREAD (with sanitization)
+  // ============================================================
   document.getElementById('create-thread-btn').addEventListener('click', async function() {
-    // Save name before posting
     ensureNameSaved();
-
-    const title = document.getElementById('thread-title').value.trim();
-    const content = document.getElementById('thread-content').value.trim();
-    const author = document.getElementById('author-name').value.trim() || 'Anonymous';
+    const titleInput = document.getElementById('thread-title');
+    const contentInput = document.getElementById('thread-content');
+    const authorInput = document.getElementById('author-name');
     const imageInput = document.getElementById('thread-image-input');
     const statusEl = document.getElementById('thread-status');
 
-    if (!title) { alert('Enter a title.'); return; }
+    const rawTitle = titleInput.value.trim();
+    const rawContent = contentInput.value.trim();
+    const rawAuthor = authorInput.value.trim() || 'Anonymous';
+
+    if (!rawTitle) { alert('Enter a title.'); return; }
+
+    const title = sanitizeInput(rawTitle);
+    const content = sanitizeInput(rawContent);
+    const author = sanitizeInput(rawAuthor);
 
     this.disabled = true;
     setStatus(statusEl, 'Sending...', 'sending');
@@ -548,12 +627,14 @@
       }
     }
 
-    const { error } = await supabaseClient.from('threads').insert([{
-      title: title,
-      content: content,
-      author_name: author,
-      image_url: imageUrl
-    }]);
+    const { error } = await supabaseClient
+      .from('threads')
+      .insert([{
+        title: title,
+        content: content,
+        author_name: author,
+        image_url: imageUrl
+      }]);
 
     if (error) {
       setStatus(statusEl, 'Failed: ' + error.message, 'error');
@@ -562,17 +643,20 @@
     }
 
     setStatus(statusEl, 'Sent! ✅', 'sent');
-    document.getElementById('thread-title').value = '';
-    document.getElementById('thread-content').value = '';
-    document.getElementById('author-name').value = '';
+    titleInput.value = '';
+    contentInput.value = '';
+    authorInput.value = '';
     if (imageInput) imageInput.value = '';
     const preview = document.getElementById('thread-image-preview');
     if (preview) { preview.style.display = 'none'; preview.src = ''; }
 
-    loadThreads();
+    await loadThreads();
     this.disabled = false;
   });
 
+  // ============================================================
+  // IMAGE PREVIEW
+  // ============================================================
   document.getElementById('thread-image-input').addEventListener('change', function(e) {
     const preview = document.getElementById('thread-image-preview');
     if (this.files && this.files[0]) {
@@ -595,6 +679,9 @@
     }
   });
 
+  // ============================================================
+  // AUTH
+  // ============================================================
   async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     const status = document.getElementById('auth-status');
@@ -602,6 +689,9 @@
     else status.innerHTML = `<i class="fas fa-user-secret"></i> Anonymous`;
   }
 
+  // ============================================================
+  // INIT
+  // ============================================================
   loadThreads();
   checkAuth();
 </script>
