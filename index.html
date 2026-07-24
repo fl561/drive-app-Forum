@@ -6,7 +6,6 @@
   <title>World Forum</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-  <!-- Stripe & PayPal SDKs for modal -->
   <script async src="https://js.stripe.com/v3/buy-button.js"></script>
   <script src="https://www.paypal.com/sdk/js?client-id=AaZIURGHfoVL0seNGmKhkm3_piU1UERhw7N4TaWhA8DIRRfxZ383l5QqVbyBHfsrB1Hz3H589vd1ZcpI&buyer-country=US&currency=USD&components=buttons&enable-funding=venmo,paylater,card" data-sdk-integration-source="developer-studio"></script>
   <style>
@@ -135,7 +134,6 @@
     .status-msg.sent { color: #2dd4bf; }
     .status-msg.error { color: #f43f5e; }
 
-    /* ─── TINTED POSTS ─── */
     .admin-post {
       background: #2a0f1a !important;
       border: 2px solid #ff0033 !important;
@@ -228,9 +226,13 @@
     .thread-card .author img { width: 32px; height: 32px; border-radius: 50%; background: #1e2648; border: 2px solid #2a2f4b; }
     .thread-card .author .name { font-weight: 600; font-size: 0.9rem; }
     .thread-card .author .time { font-size: 0.7rem; color: #7a82a0; margin-left: auto; }
+    .thread-card .author .lock-icon { color: #fbbf24; margin-left: 0.3rem; }
+    .thread-card .author .age-icon { color: #fbbf24; margin-left: 0.3rem; }
     .thread-card h2 { font-size: 1.1rem; font-weight: 600; margin: 0.2rem 0 0.3rem; }
-    .thread-card .content { color: #c8cee0; line-height: 1.4; margin-bottom: 0.5rem; font-size: 0.95rem; }
-    .thread-card .thread-image { max-width: 100%; border-radius: 12px; margin: 0.5rem 0; max-height: 300px; object-fit: cover; }
+    .thread-card .content { color: #c8cee0; line-height: 1.4; margin-bottom: 0.5rem; font-size: 0.95rem; word-wrap: break-word; }
+    .thread-card .thread-image { max-width: 100%; border-radius: 12px; margin: 0.5rem 0; max-height: 300px; object-fit: cover; cursor: pointer; }
+    .image-blur { filter: blur(20px); transition: filter 0.3s ease; }
+    .image-blur.unblurred { filter: none; }
     .thread-card .actions {
       display: flex;
       gap: 1.2rem;
@@ -270,8 +272,12 @@
     .reply-item .author img { width: 24px; height: 24px; border-radius: 50%; background: #1e2648; }
     .reply-item .author .name { font-weight: 500; font-size: 0.8rem; }
     .reply-item .author .time { font-size: 0.65rem; color: #7a82a0; margin-left: auto; }
-    .reply-item .content { font-size: 0.9rem; color: #c8cee0; margin-top: 0.1rem; }
-    .reply-item .reply-image { max-width: 100%; border-radius: 8px; margin-top: 0.3rem; max-height: 200px; object-fit: cover; }
+    .reply-item .content { font-size: 0.9rem; color: #c8cee0; margin-top: 0.1rem; word-wrap: break-word; }
+    .reply-item .reply-image { max-width: 100%; border-radius: 8px; margin-top: 0.3rem; max-height: 200px; object-fit: cover; cursor: pointer; }
+    .reply-item .admin-post { background: #2a0f1a !important; border: 1px solid #ff0033 !important; }
+    .reply-item .mod-post { background: #1f2a0f !important; border: 1px solid #ff8800 !important; }
+    .reply-item .unverified-post { background: #1a1a2a !important; border: 1px solid rgba(255,255,255,0.2) !important; }
+
     .reply-form { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .reply-form input, .reply-form textarea {
       flex: 1;
@@ -287,6 +293,31 @@
     .reply-form button { background: #1e2648; border: none; padding: 0.4rem 1rem; border-radius: 30px; color: #88b0f0; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
     .reply-form button:hover { background: #2a3360; color: white; }
     .reply-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .lock-overlay, .age-overlay {
+      background: rgba(0, 0, 0, 0.85);
+      padding: 1rem;
+      border-radius: 12px;
+      text-align: center;
+      margin: 0.5rem 0;
+    }
+    .lock-overlay input, .age-overlay input {
+      background: #0f1426;
+      border: 1px solid #2a2f4b;
+      color: #e4e6eb;
+      padding: 0.5rem;
+      border-radius: 8px;
+      margin: 0.3rem;
+    }
+    .lock-overlay button, .age-overlay button {
+      background: #0ea5e9;
+      border: none;
+      padding: 0.3rem 1rem;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+    .lock-overlay button:hover, .age-overlay button:hover { background: #0284c7; }
 
     .threads-loading {
       text-align: center;
@@ -312,7 +343,7 @@
       .admin-actions .btn-admin { font-size: 0.7rem; padding: 0.15rem 0.7rem; }
     }
 
-    /* ─── MODAL (unchanged) ─── */
+    /* Modal styles (unchanged from previous) */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -544,6 +575,13 @@
       <label for="thread-image-input"><i class="fas fa-image"></i> Add image</label>
       <img id="thread-image-preview" class="preview" alt="preview" />
     </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0;">
+      <label style="display: flex; align-items: center; gap: 0.3rem; color: #aaa;">
+        <input type="checkbox" id="thread-blur" /> Blur image
+      </label>
+      <input type="text" id="thread-password" placeholder="Password lock (optional)" style="flex:1; min-width:120px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
+      <input type="number" id="thread-age" placeholder="Min age (0=none)" style="width:100px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
+    </div>
     <div class="row" style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;">
       <input type="text" id="author-name" placeholder="Your name (optional)" style="flex:2; min-width:120px;" />
       <button class="btn-primary" id="create-thread-btn"><i class="fas fa-paper-plane"></i> Post</button>
@@ -554,18 +592,16 @@
   <div id="threads-container"></div>
 </div>
 
-<!-- ─── SUBSCRIBE MODAL ─────────────────────────────────────────── -->
+<!-- Subscribe Modal -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-content" id="modalContent">
     <button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">
       <i class="fas fa-times"></i>
     </button>
-
     <div class="card-header">
       <h1>⚡ All Payment Methods</h1>
       <p>Choose your preferred way — fast, secure, and private.</p>
     </div>
-
     <div class="grid-2col">
       <div class="embedded-wrapper">
         <span class="label">PayPal</span>
@@ -573,51 +609,27 @@
       </div>
       <div class="embedded-wrapper">
         <span class="label">Stripe</span>
-        <stripe-buy-button
-          buy-button-id="buy_btn_1TqoW5LSIB6IjFRXK9UsvpAT"
-          publishable-key="pk_live_51TKTF4LSIB6IjFRX3lKiYl3vVLCiphsZluzPsi9Zzz4Dxs1AxXqn2tQXwpXlKuzP2ePkXIn45BoqkVRsSVhSczkk00EhKZvS83"
-        >
-        </stripe-buy-button>
+        <stripe-buy-button buy-button-id="buy_btn_1TqoW5LSIB6IjFRXK9UsvpAT" publishable-key="pk_live_51TKTF4LSIB6IjFRX3lKiYl3vVLCiphsZluzPsi9Zzz4Dxs1AxXqn2tQXwpXlKuzP2ePkXIn45BoqkVRsSVhSczkk00EhKZvS83"></stripe-buy-button>
       </div>
     </div>
-
     <div class="flex-row" style="margin-top: 0.75rem;">
-      <button class="btn btn-venmo" id="venmoQuickBtn" type="button" style="flex:1;">
-        <i class="fab fa-venmo"></i> Pay with Venmo
-      </button>
-      <button class="btn btn-crypto" id="cryptoPayBtn" type="button" style="flex:1;">
-        <i class="fab fa-bitcoin"></i> Pay with Crypto
-      </button>
+      <button class="btn btn-venmo" id="venmoQuickBtn" type="button" style="flex:1;"><i class="fab fa-venmo"></i> Venmo</button>
+      <button class="btn btn-crypto" id="cryptoPayBtn" type="button" style="flex:1;"><i class="fab fa-bitcoin"></i> Crypto</button>
     </div>
-
     <div class="divider"></div>
-
     <button class="crypto-toggle" id="cryptoToggle" type="button">
       <span>🔑 Reveal Crypto &amp; Secure Options</span>
       <span class="arrow">▾</span>
     </button>
-
     <div class="crypto-content" id="cryptoContent">
       <div class="crypto-grid">
         <div class="crypto-box">
-          <span class="title">⚡ Pay with Crypto (Widget)</span>
+          <span class="title">⚡ Crypto Widget</span>
           <div class="iframe-wrap">
-            <iframe
-              src="https://nowpayments.io/embeds/payment-widget?iid=5412862639"
-              width="410"
-              height="696"
-              frameborder="0"
-              scrolling="no"
-              style="overflow-y: hidden; width:100%; height:480px; border:0;"
-              loading="lazy"
-              title="NOWPayments payment widget"
-            ></iframe>
+            <iframe src="https://nowpayments.io/embeds/payment-widget?iid=5412862639" width="410" height="696" frameborder="0" scrolling="no" style="overflow-y: hidden; width:100%; height:480px; border:0;" loading="lazy"></iframe>
           </div>
-          <button class="btn btn-crypto" id="directPaymentBtn" type="button" style="width:100%;">
-            <i class="fas fa-external-link-alt"></i> Open payment page directly
-          </button>
+          <button class="btn btn-crypto" id="directPaymentBtn" type="button" style="width:100%;"><i class="fas fa-external-link-alt"></i> Open payment page</button>
         </div>
-
         <div class="crypto-box">
           <span class="title">₿ Bitcoin Address</span>
           <div class="address-copy">
@@ -625,45 +637,31 @@
             <input type="text" value="bc1qwflupf704dhvwfk8msrzgz7f8x5vmp7hdetm0y" id="btcAddress" readonly>
             <button class="copy-btn" id="copyBtn" type="button">📋 Copy</button>
           </div>
-
           <div class="disclosure-text">
             <strong>⚠️ FIAT TERMINATED / POLICY DISCLOSURE</strong>
             <p style="margin-top:4px;"><strong>EN:</strong> All traditional gateways are blacklisted due to chargeback abuse. Bitcoin transactions are irreversible. No refunds.</p>
             <p style="margin-top:4px;"><strong>PT:</strong> Gateways tradicionais banidos devido a fraudes. Transações Bitcoin imutáveis. Reembolso zero.</p>
             <p style="margin-top:4px;"><strong>ZH:</strong> 因恶意申诉欺诈，传统支付已禁用。比特币交易不可篡改，概不退款。</p>
           </div>
-
           <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
-            <button class="btn btn-telegram" id="telegramBtn" type="button" style="flex:1;">
-              <i class="fab fa-telegram"></i> Telegram
-            </button>
-            <button class="btn btn-safew" id="safewBtn" type="button" style="flex:1;">
-              <i class="fas fa-shield-alt"></i> Safew
-            </button>
+            <button class="btn btn-telegram" id="telegramBtn" type="button" style="flex:1;"><i class="fab fa-telegram"></i> Telegram</button>
+            <button class="btn btn-safew" id="safewBtn" type="button" style="flex:1;"><i class="fas fa-shield-alt"></i> Safew</button>
           </div>
-          <p style="font-size:0.7rem; color:#555; text-align:center; margin-top:0.5rem;">
-            After paying, message us on Telegram or Safew with your TXID.
-          </p>
+          <p style="font-size:0.7rem; color:#555; text-align:center; margin-top:0.5rem;">After paying, message us on Telegram or Safew with your TXID.</p>
         </div>
       </div>
     </div>
-
     <div class="divider"></div>
-
     <div class="dropdown-wrapper">
       <div class="sub">💳 Traditional Payment Methods (vetted members only · reference)</div>
       <div class="dropdown" id="dropdownContainer">
         <button id="dropdownBtn" type="button">
-          <span class="btn-content">
-            <span class="icon">💳</span>
-            <span class="label" id="selectedLabel">Select payment</span>
-          </span>
+          <span class="btn-content"><span class="icon">💳</span><span class="label" id="selectedLabel">Select payment</span></span>
           <span class="arrow">▾</span>
         </button>
         <div id="dropdownMenu"></div>
       </div>
     </div>
-
     <div class="footnote">
       <strong>Final Policy:</strong> All Bitcoin payments are final. Legacy platforms are permanently locked for new accounts.
       <span style="display:block; margin-top:6px;">📩 For support: <a href="https://t.me/Superhelpful" target="_blank">@superhelpful</a></span>
@@ -680,7 +678,7 @@
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ============================================================
-  // INPUT SANITIZATION
+  // HELPERS
   // ============================================================
   function sanitizeInput(text) {
     if (!text) return '';
@@ -689,40 +687,23 @@
     return temp.innerHTML;
   }
 
-  // ============================================================
-  // NAME PERSISTENCE (no changes)
-  // ============================================================
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   function saveName(name) {
-    if (name && name.trim()) {
-      localStorage.setItem('forum_username', name.trim());
-    }
+    if (name && name.trim()) localStorage.setItem('forum_username', name.trim());
   }
-
-  function loadName() {
-    return localStorage.getItem('forum_username') || '';
-  }
-
-  function getUserName() {
-    const stored = loadName();
-    return stored || 'Anonymous';
-  }
-
-  document.getElementById('author-name').addEventListener('input', function() {
-    saveName(this.value);
-  });
-  document.getElementById('author-name').addEventListener('blur', function() {
-    saveName(this.value);
-  });
+  function loadName() { return localStorage.getItem('forum_username') || ''; }
+  function getUserName() { const stored = loadName(); return stored || 'Anonymous'; }
+  document.getElementById('author-name').addEventListener('input', function() { saveName(this.value); });
+  document.getElementById('author-name').addEventListener('blur', function() { saveName(this.value); });
   document.getElementById('author-name').value = loadName();
+  function ensureNameSaved() { saveName(document.getElementById('author-name').value); }
 
-  function ensureNameSaved() {
-    const input = document.getElementById('author-name');
-    saveName(input.value);
-  }
-
-  // ============================================================
-  // AVATAR & SOUND
-  // ============================================================
   function getAvatar(name) {
     const initial = name && name.trim() ? name.charAt(0).toUpperCase() : '?';
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1e2648&color=38bdf8&size=64&bold=true`;
@@ -742,13 +723,8 @@
     } catch(e) { /* ignore */ }
   }
 
-  function triggerHaptics() {
-    if (navigator.vibrate) navigator.vibrate(10);
-  }
+  function triggerHaptics() { if (navigator.vibrate) navigator.vibrate(10); }
 
-  // ============================================================
-  // IMAGE UPLOAD
-  // ============================================================
   async function uploadImage(file, folder = 'threads') {
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = `${folder}/${fileName}`;
@@ -758,9 +734,6 @@
     return publicUrlData.publicUrl;
   }
 
-  // ============================================================
-  // STATUS MESSAGE
-  // ============================================================
   function setStatus(element, message, type = 'sending') {
     if (!element) return;
     element.textContent = message;
@@ -772,7 +745,7 @@
   }
 
   // ============================================================
-  // HELPER: determine user role and badge
+  // USER ROLE
   // ============================================================
   function getUserDisplay(name) {
     const trimmed = name ? name.trim() : '';
@@ -794,31 +767,16 @@
   // ============================================================
   async function loadThreads() {
     const container = document.getElementById('threads-container');
-    container.innerHTML = `
-      <div class="threads-loading">
-        <i class="fas fa-spinner fa-pulse"></i>
-        <span>Loading threads...</span>
-      </div>
-    `;
+    container.innerHTML = `<div class="threads-loading"><i class="fas fa-spinner fa-pulse"></i><span>Loading threads...</span></div>`;
 
-    const { data: threads, error } = await supabaseClient
-      .from('threads')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      container.innerHTML = `<div class="thread-card" style="border-color:#f43f5e;"><p>❌ Error: ${error.message}</p></div>`;
-      return;
-    }
+    const { data: threads, error } = await supabaseClient.from('threads').select('*').order('created_at', { ascending: false });
+    if (error) { container.innerHTML = `<div class="thread-card" style="border-color:#f43f5e;"><p>❌ Error: ${error.message}</p></div>`; return; }
 
     document.getElementById('stat-threads').textContent = threads ? threads.length : 0;
     let totalReplies = 0;
     if (threads && threads.length > 0) {
       const threadIds = threads.map(t => t.id);
-      const { count } = await supabaseClient
-        .from('posts')
-        .select('*', { count: 'exact', head: true })
-        .in('thread_id', threadIds);
+      const { count } = await supabaseClient.from('posts').select('*', { count: 'exact', head: true }).in('thread_id', threadIds);
       if (count !== null) totalReplies = count;
     }
     document.getElementById('stat-replies').textContent = totalReplies;
@@ -831,20 +789,10 @@
     const userName = getUserName();
     let html = '';
     for (const t of threads) {
-      const { count: likeCount } = await supabaseClient
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('thread_id', t.id);
-      const { count: userLikeCount } = await supabaseClient
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('thread_id', t.id)
-        .eq('user_name', userName);
+      const { count: likeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
+      const { count: userLikeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id).eq('user_name', userName);
       const userLike = userLikeCount > 0;
-      const { count: replyCount } = await supabaseClient
-        .from('posts')
-        .select('*', { count: 'exact', head: true })
-        .eq('thread_id', t.id);
+      const { count: replyCount } = await supabaseClient.from('posts').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
 
       const safeTitle = sanitizeInput(t.title);
       const safeContent = sanitizeInput(t.content || '');
@@ -856,7 +804,54 @@
                         userInfo.role === 'unverified' ? 'unverified-post' : '';
       const badgeHtml = userInfo.badge;
 
-      const imageHtml = t.image_url ? `<img src="${t.image_url}" class="thread-image" alt="thread image" />` : '';
+      // Image with blur
+      let imageHtml = '';
+      if (t.image_url) {
+        const blurredClass = t.blurred ? 'image-blur' : '';
+        const unblurred = localStorage.getItem(`unblurred_${t.id}`) === 'true' ? 'unblurred' : '';
+        const imgClass = `thread-image ${blurredClass} ${unblurred}`.trim();
+        imageHtml = `<img src="${t.image_url}" class="${imgClass}" alt="thread image" onclick="toggleBlur('${t.id}', this)" />`;
+      }
+
+      // Password lock
+      let lockHtml = '';
+      let passwordVerified = false;
+      if (t.password_hash) {
+        const unlocked = localStorage.getItem(`unlocked_${t.id}`) === 'true';
+        if (!unlocked) {
+          lockHtml = `
+            <div class="lock-overlay">
+              <p><i class="fas fa-lock"></i> This post is password protected.</p>
+              <input type="password" id="pwd-input-${t.id}" placeholder="Enter password" />
+              <button onclick="unlockThread('${t.id}')">Unlock</button>
+              <span id="pwd-error-${t.id}" style="color:#f43f5e; display:block;"></span>
+            </div>
+          `;
+        } else {
+          passwordVerified = true;
+        }
+      }
+
+      // Age gate
+      let ageHtml = '';
+      let ageVerified = false;
+      if (t.age_required && t.age_required > 0) {
+        const ageOk = localStorage.getItem(`age_verified_${t.id}`) === 'true';
+        if (!ageOk) {
+          ageHtml = `
+            <div class="age-overlay">
+              <p><i class="fas fa-shield-alt"></i> This post requires age ${t.age_required}+.</p>
+              <input type="number" id="age-input-${t.id}" placeholder="Enter your age" />
+              <button onclick="verifyAge('${t.id}', ${t.age_required})">Verify</button>
+              <span id="age-error-${t.id}" style="color:#f43f5e; display:block;"></span>
+            </div>
+          `;
+        } else {
+          ageVerified = true;
+        }
+      }
+
+      const showContent = (!t.password_hash || passwordVerified) && (!t.age_required || t.age_required === 0 || ageVerified);
 
       let adminActions = '';
       if (userInfo.role === 'admin') {
@@ -868,16 +863,26 @@
         `;
       }
 
+      const lockIcon = t.password_hash ? `<i class="fas fa-lock lock-icon" title="Password protected"></i>` : '';
+      const ageIcon = t.age_required && t.age_required > 0 ? `<i class="fas fa-shield-alt age-icon" title="Age ${t.age_required}+"></i>` : '';
+
       html += `
         <div class="thread-card ${roleClass}" data-thread-id="${t.id}">
           <div class="author">
             <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
             <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
             <span class="time">${new Date(t.created_at).toLocaleString()}</span>
+            ${lockIcon} ${ageIcon}
           </div>
           <h2>${safeTitle}</h2>
-          <div class="content">${safeContent}</div>
-          ${imageHtml}
+          ${showContent ? `
+            <div class="content">${safeContent}</div>
+            ${imageHtml}
+          ` : `
+            <div class="content" style="opacity:0.3; filter: blur(4px); pointer-events:none;">${safeContent.substring(0, 100)}...</div>
+            ${t.image_url ? `<div style="filter: blur(20px);">${imageHtml}</div>` : ''}
+          `}
+          ${!showContent ? lockHtml + ageHtml : ''}
           ${adminActions}
           <div class="actions">
             <span class="like-toggle ${userLike ? 'liked' : ''}" data-thread="${t.id}" onclick="toggleLike('${t.id}')">
@@ -897,6 +902,289 @@
   }
 
   // ============================================================
+  // BLUR, UNLOCK, AGE
+  // ============================================================
+  window.toggleBlur = function(threadId, imgElement) {
+    const current = imgElement.classList.contains('unblurred');
+    if (current) {
+      imgElement.classList.remove('unblurred');
+      localStorage.setItem(`unblurred_${threadId}`, 'false');
+    } else {
+      imgElement.classList.add('unblurred');
+      localStorage.setItem(`unblurred_${threadId}`, 'true');
+    }
+  };
+
+  window.unlockThread = async function(threadId) {
+    const input = document.getElementById(`pwd-input-${threadId}`);
+    const errorSpan = document.getElementById(`pwd-error-${threadId}`);
+    const entered = input.value;
+    if (!entered) { errorSpan.textContent = 'Enter a password.'; return; }
+
+    const { data, error } = await supabaseClient.from('threads').select('password_hash').eq('id', threadId).single();
+    if (error) { errorSpan.textContent = 'Error fetching password.'; return; }
+    const enteredHash = await sha256(entered);
+    if (enteredHash === data.password_hash) {
+      localStorage.setItem(`unlocked_${threadId}`, 'true');
+      loadThreads();
+    } else {
+      errorSpan.textContent = 'Incorrect password.';
+    }
+  };
+
+  window.verifyAge = function(threadId, requiredAge) {
+    const input = document.getElementById(`age-input-${threadId}`);
+    const errorSpan = document.getElementById(`age-error-${threadId}`);
+    const age = parseInt(input.value);
+    if (isNaN(age) || age < requiredAge) {
+      errorSpan.textContent = `You must be at least ${requiredAge} years old.`;
+      return;
+    }
+    localStorage.setItem(`age_verified_${threadId}`, 'true');
+    loadThreads();
+  };
+
+  // ============================================================
+  // LIKE
+  // ============================================================
+  window.toggleLike = async function(threadId) {
+    const userName = getUserName();
+    const likeToggle = document.querySelector(`.like-toggle[data-thread="${threadId}"]`);
+    if (!likeToggle) return;
+
+    const { data: existing } = await supabaseClient.from('likes').select('*').eq('thread_id', parseInt(threadId)).eq('user_name', userName);
+    if (existing && existing.length > 0) {
+      const { error } = await supabaseClient.from('likes').delete().eq('thread_id', parseInt(threadId)).eq('user_name', userName);
+      if (error) { alert('Error: ' + error.message); return; }
+    } else {
+      const { error } = await supabaseClient.from('likes').insert([{ thread_id: parseInt(threadId), user_name: userName }]);
+      if (error) { alert('Error: ' + error.message); return; }
+      triggerHaptics();
+      playPopSound();
+    }
+    loadThreads();
+  };
+
+  // ============================================================
+  // VIEW REPLIES
+  // ============================================================
+  window.viewThread = async function(threadId) {
+    const container = document.getElementById(`replies-${threadId}`);
+    if (!container) return;
+
+    if (container.classList.contains('hidden')) {
+      container.classList.remove('hidden');
+      const { data: posts, error } = await supabaseClient.from('posts').select('*').eq('thread_id', threadId).order('created_at', { ascending: true });
+      if (error) {
+        container.innerHTML = `<p style="color:#f43f5e;">❌ Error: ${error.message}</p>`;
+        return;
+      }
+
+      let html = '';
+      if (!posts || posts.length === 0) {
+        html = '<p class="text-muted">No replies yet. Be the first!</p>';
+      } else {
+        html = posts.map(p => {
+          const rawAuthor = p.author_name || '';
+          const userInfo = getUserDisplay(rawAuthor);
+          const displayName = userInfo.displayName;
+          const roleClass = userInfo.role === 'admin' ? 'admin-post' :
+                            userInfo.role === 'mod' ? 'mod-post' :
+                            userInfo.role === 'unverified' ? 'unverified-post' : '';
+          const badgeHtml = userInfo.badge;
+          const safeContent = sanitizeInput(p.content);
+          return `
+            <div class="reply-item ${roleClass}">
+              <div class="author">
+                <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
+                <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
+                <span class="time">${new Date(p.created_at).toLocaleString()}</span>
+              </div>
+              <div class="content">${safeContent}</div>
+              ${p.image_url ? `<img src="${p.image_url}" class="reply-image" />` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      html += `
+        <div class="reply-form">
+          <input type="text" id="reply-author-${threadId}" placeholder="Your name" />
+          <textarea id="reply-content-${threadId}" placeholder="Write a reply..." rows="2"></textarea>
+          <div class="file-input-wrapper" style="flex-basis:100%;">
+            <input type="file" id="reply-image-${threadId}" accept="image/*" />
+            <label for="reply-image-${threadId}" style="font-size:0.75rem;"><i class="fas fa-image"></i> Add image</label>
+            <img id="reply-image-preview-${threadId}" class="preview" />
+          </div>
+          <button onclick="addReply('${threadId}')"><i class="fas fa-reply"></i> Reply</button>
+          <span id="reply-status-${threadId}" class="status-msg" style="display:none;"></span>
+        </div>
+      `;
+      container.innerHTML = html;
+      setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+    } else {
+      container.classList.add('hidden');
+    }
+  };
+
+  // ============================================================
+  // ADD REPLY
+  // ============================================================
+  window.addReply = async function(threadId) {
+    const authorInput = document.getElementById(`reply-author-${threadId}`);
+    const contentInput = document.getElementById(`reply-content-${threadId}`);
+    const imageInput = document.getElementById(`reply-image-${threadId}`);
+    const statusEl = document.getElementById(`reply-status-${threadId}`);
+    const btn = document.querySelector(`#replies-${threadId} .reply-form button`);
+
+    const rawAuthor = authorInput.value.trim();
+    const rawContent = contentInput.value.trim();
+    if (!rawContent) { alert('Write something.'); return; }
+
+    const author = rawAuthor;
+    const content = sanitizeInput(rawContent);
+
+    btn.disabled = true;
+    setStatus(statusEl, 'Sending...', 'sending');
+
+    let imageUrl = null;
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+      const file = imageInput.files[0];
+      imageUrl = await uploadImage(file, 'replies');
+      if (!imageUrl) {
+        setStatus(statusEl, 'Image upload failed', 'error');
+        btn.disabled = false;
+        return;
+      }
+    }
+
+    const { error } = await supabaseClient.from('posts').insert([{
+      thread_id: parseInt(threadId),
+      author_name: author,
+      content: content,
+      image_url: imageUrl
+    }]);
+
+    if (error) {
+      setStatus(statusEl, 'Failed: ' + error.message, 'error');
+      btn.disabled = false;
+      return;
+    }
+
+    setStatus(statusEl, 'Sent! ✅', 'sent');
+    authorInput.value = '';
+    contentInput.value = '';
+    if (imageInput) imageInput.value = '';
+    const preview = document.getElementById(`reply-image-preview-${threadId}`);
+    if (preview) { preview.style.display = 'none'; preview.src = ''; }
+
+    playPopSound();
+    triggerHaptics();
+
+    await viewThread(threadId);
+    loadThreads();
+    btn.disabled = false;
+  };
+
+  // ============================================================
+  // CREATE THREAD
+  // ============================================================
+  document.getElementById('create-thread-btn').addEventListener('click', async function() {
+    ensureNameSaved();
+    const titleInput = document.getElementById('thread-title');
+    const contentInput = document.getElementById('thread-content');
+    const authorInput = document.getElementById('author-name');
+    const imageInput = document.getElementById('thread-image-input');
+    const blurCheck = document.getElementById('thread-blur');
+    const passwordInput = document.getElementById('thread-password');
+    const ageInput = document.getElementById('thread-age');
+    const statusEl = document.getElementById('thread-status');
+
+    const rawTitle = titleInput.value.trim();
+    const rawContent = contentInput.value.trim();
+    const rawAuthor = authorInput.value.trim();
+    if (!rawTitle) { alert('Enter a title.'); return; }
+
+    const title = sanitizeInput(rawTitle);
+    const content = sanitizeInput(rawContent);
+    const author = rawAuthor;
+    const blurred = blurCheck.checked;
+    let password_hash = null;
+    const password = passwordInput.value.trim();
+    if (password) {
+      password_hash = await sha256(password);
+    }
+    const age_required = parseInt(ageInput.value) || 0;
+
+    this.disabled = true;
+    setStatus(statusEl, 'Sending...', 'sending');
+
+    let imageUrl = null;
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+      const file = imageInput.files[0];
+      imageUrl = await uploadImage(file, 'threads');
+      if (!imageUrl) {
+        setStatus(statusEl, 'Image upload failed', 'error');
+        this.disabled = false;
+        return;
+      }
+    }
+
+    const { error } = await supabaseClient.from('threads').insert([{
+      title: title,
+      content: content,
+      author_name: author,
+      image_url: imageUrl,
+      blurred: blurred,
+      password_hash: password_hash,
+      age_required: age_required
+    }]);
+
+    if (error) {
+      setStatus(statusEl, 'Failed: ' + error.message, 'error');
+      this.disabled = false;
+      return;
+    }
+
+    setStatus(statusEl, 'Sent! ✅', 'sent');
+    titleInput.value = '';
+    contentInput.value = '';
+    authorInput.value = '';
+    imageInput.value = '';
+    document.getElementById('thread-image-preview').style.display = 'none';
+    blurCheck.checked = false;
+    passwordInput.value = '';
+    ageInput.value = '';
+    loadThreads();
+    this.disabled = false;
+  });
+
+  // ============================================================
+  // IMAGE PREVIEW
+  // ============================================================
+  document.getElementById('thread-image-input').addEventListener('change', function(e) {
+    const preview = document.getElementById('thread-image-preview');
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(ev) { preview.src = ev.target.result; preview.style.display = 'block'; };
+      reader.readAsDataURL(this.files[0]);
+    } else { preview.style.display = 'none'; }
+  });
+
+  document.addEventListener('change', function(e) {
+    const target = e.target;
+    if (target && target.id && target.id.startsWith('reply-image-')) {
+      const threadId = target.id.split('-')[2];
+      const preview = document.getElementById(`reply-image-preview-${threadId}`);
+      if (preview && target.files && target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(ev) { preview.src = ev.target.result; preview.style.display = 'block'; };
+        reader.readAsDataURL(target.files[0]);
+      } else if (preview) { preview.style.display = 'none'; }
+    }
+  });
+
+  // ============================================================
   // ADMIN ACTIONS
   // ============================================================
   window.handleFollow = function() {
@@ -908,7 +1196,9 @@
     document.body.style.overflow = 'hidden';
   };
 
-  // ─── MODAL CONTROLS ──────────────────────────────────────────
+  // ============================================================
+  // MODAL CONTROLS
+  // ============================================================
   document.getElementById('modalCloseBtn').addEventListener('click', function() {
     document.getElementById('modalOverlay').classList.remove('open');
     document.body.style.overflow = '';
@@ -927,7 +1217,7 @@
   });
 
   // ============================================================
-  // PAYMENT MODAL SCRIPTS (unchanged)
+  // PAYMENT MODAL SCRIPTS
   // ============================================================
   let paypalRendered = false;
   function renderPayPal() {
@@ -992,7 +1282,6 @@
     window.open('https://sfw.vc/superhelpful', '_blank');
   });
 
-  // ─── DROPDOWN ──────────────────────────────────────────────────
   const processors = [
     { name: 'PayPal', icon: '🅿️', bg: '#003087' },
     { name: 'Stripe', icon: '⚡', bg: '#635bff' },
@@ -1074,253 +1363,6 @@
   document.getElementById('modalOverlay').addEventListener('transitionend', function(e) {
     if (e.target === this && this.classList.contains('open')) {
       renderPayPal();
-    }
-  });
-
-  // ============================================================
-  // LIKE
-  // ============================================================
-  window.toggleLike = async function(threadId) {
-    const userName = getUserName();
-    const likeToggle = document.querySelector(`.like-toggle[data-thread="${threadId}"]`);
-    if (!likeToggle) return;
-
-    const { data: existing } = await supabaseClient
-      .from('likes')
-      .select('*')
-      .eq('thread_id', parseInt(threadId))
-      .eq('user_name', userName);
-
-    if (existing && existing.length > 0) {
-      const { error } = await supabaseClient
-        .from('likes')
-        .delete()
-        .eq('thread_id', parseInt(threadId))
-        .eq('user_name', userName);
-      if (error) { alert('Error: ' + error.message); return; }
-    } else {
-      const { error } = await supabaseClient
-        .from('likes')
-        .insert([{ thread_id: parseInt(threadId), user_name: userName }]);
-      if (error) { alert('Error: ' + error.message); return; }
-      triggerHaptics();
-      playPopSound();
-    }
-    await loadThreads();
-  };
-
-  // ============================================================
-  // VIEW REPLIES (with same tint logic)
-  // ============================================================
-  window.viewThread = async function(threadId) {
-    const container = document.getElementById(`replies-${threadId}`);
-    if (!container) return;
-
-    if (container.classList.contains('hidden')) {
-      container.classList.remove('hidden');
-      const { data: posts, error } = await supabaseClient
-        .from('posts')
-        .select('*')
-        .eq('thread_id', threadId)
-        .order('created_at', { ascending: true });
-      if (error) {
-        container.innerHTML = `<p style="color:#f43f5e;">❌ Error: ${error.message}</p>`;
-        return;
-      }
-
-      let html = '';
-      if (!posts || posts.length === 0) {
-        html = '<p class="text-muted">No replies yet. Be the first!</p>';
-      } else {
-        html = posts.map(p => {
-          const rawAuthor = p.author_name || '';
-          const userInfo = getUserDisplay(rawAuthor);
-          const displayName = userInfo.displayName;
-          const roleClass = userInfo.role === 'admin' ? 'admin-post' :
-                            userInfo.role === 'mod' ? 'mod-post' :
-                            userInfo.role === 'unverified' ? 'unverified-post' : '';
-          const badgeHtml = userInfo.badge;
-          const safeContent = sanitizeInput(p.content);
-          return `
-            <div class="reply-item ${roleClass}">
-              <div class="author">
-                <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
-                <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
-                <span class="time">${new Date(p.created_at).toLocaleString()}</span>
-              </div>
-              <div class="content">${safeContent}</div>
-              ${p.image_url ? `<img src="${p.image_url}" class="reply-image" />` : ''}
-            </div>
-          `;
-        }).join('');
-      }
-
-      html += `
-        <div class="reply-form">
-          <input type="text" id="reply-author-${threadId}" placeholder="Your name" />
-          <textarea id="reply-content-${threadId}" placeholder="Write a reply..." rows="2"></textarea>
-          <div class="file-input-wrapper" style="flex-basis:100%;">
-            <input type="file" id="reply-image-${threadId}" accept="image/*" />
-            <label for="reply-image-${threadId}" style="font-size:0.75rem;"><i class="fas fa-image"></i> Add image</label>
-            <img id="reply-image-preview-${threadId}" class="preview" />
-          </div>
-          <button onclick="addReply('${threadId}')"><i class="fas fa-reply"></i> Reply</button>
-          <span id="reply-status-${threadId}" class="status-msg" style="display:none;"></span>
-        </div>
-      `;
-      container.innerHTML = html;
-      setTimeout(() => container.scrollTop = container.scrollHeight, 100);
-    } else {
-      container.classList.add('hidden');
-    }
-  };
-
-  // ============================================================
-  // ADD REPLY (store empty name if blank)
-  // ============================================================
-  window.addReply = async function(threadId) {
-    const authorInput = document.getElementById(`reply-author-${threadId}`);
-    const contentInput = document.getElementById(`reply-content-${threadId}`);
-    const imageInput = document.getElementById(`reply-image-${threadId}`);
-    const statusEl = document.getElementById(`reply-status-${threadId}`);
-    const btn = document.querySelector(`#replies-${threadId} .reply-form button`);
-
-    // Do NOT default to 'Anonymous' – store exactly what they type (or empty)
-    const rawAuthor = authorInput.value.trim(); // could be empty
-    const rawContent = contentInput.value.trim();
-    if (!rawContent) { alert('Write something.'); return; }
-
-    const author = rawAuthor; // store as-is (sanitize later in display)
-    const content = sanitizeInput(rawContent);
-
-    btn.disabled = true;
-    setStatus(statusEl, 'Sending...', 'sending');
-
-    let imageUrl = null;
-    if (imageInput && imageInput.files && imageInput.files[0]) {
-      const file = imageInput.files[0];
-      imageUrl = await uploadImage(file, 'replies');
-      if (!imageUrl) {
-        setStatus(statusEl, 'Image upload failed', 'error');
-        btn.disabled = false;
-        return;
-      }
-    }
-
-    const { error } = await supabaseClient
-      .from('posts')
-      .insert([{
-        thread_id: parseInt(threadId),
-        author_name: author,
-        content: content,
-        image_url: imageUrl
-      }]);
-
-    if (error) {
-      setStatus(statusEl, 'Failed: ' + error.message, 'error');
-      btn.disabled = false;
-      return;
-    }
-
-    setStatus(statusEl, 'Sent! ✅', 'sent');
-    authorInput.value = '';
-    contentInput.value = '';
-    if (imageInput) imageInput.value = '';
-    const preview = document.getElementById(`reply-image-preview-${threadId}`);
-    if (preview) { preview.style.display = 'none'; preview.src = ''; }
-
-    playPopSound();
-    triggerHaptics();
-
-    await viewThread(threadId);
-    await loadThreads();
-    btn.disabled = false;
-  };
-
-  // ============================================================
-  // CREATE THREAD (store empty name if blank)
-  // ============================================================
-  document.getElementById('create-thread-btn').addEventListener('click', async function() {
-    ensureNameSaved();
-    const titleInput = document.getElementById('thread-title');
-    const contentInput = document.getElementById('thread-content');
-    const authorInput = document.getElementById('author-name');
-    const imageInput = document.getElementById('thread-image-input');
-    const statusEl = document.getElementById('thread-status');
-
-    const rawTitle = titleInput.value.trim();
-    const rawContent = contentInput.value.trim();
-    const rawAuthor = authorInput.value.trim(); // may be empty
-
-    if (!rawTitle) { alert('Enter a title.'); return; }
-
-    const title = sanitizeInput(rawTitle);
-    const content = sanitizeInput(rawContent);
-    const author = rawAuthor; // store as-is
-
-    this.disabled = true;
-    setStatus(statusEl, 'Sending...', 'sending');
-
-    let imageUrl = null;
-    if (imageInput && imageInput.files && imageInput.files[0]) {
-      const file = imageInput.files[0];
-      imageUrl = await uploadImage(file, 'threads');
-      if (!imageUrl) {
-        setStatus(statusEl, 'Image upload failed', 'error');
-        this.disabled = false;
-        return;
-      }
-    }
-
-    const { error } = await supabaseClient
-      .from('threads')
-      .insert([{
-        title: title,
-        content: content,
-        author_name: author,
-        image_url: imageUrl
-      }]);
-
-    if (error) {
-      setStatus(statusEl, 'Failed: ' + error.message, 'error');
-      this.disabled = false;
-      return;
-    }
-
-    setStatus(statusEl, 'Sent! ✅', 'sent');
-    titleInput.value = '';
-    contentInput.value = '';
-    authorInput.value = '';
-    if (imageInput) imageInput.value = '';
-    const preview = document.getElementById('thread-image-preview');
-    if (preview) { preview.style.display = 'none'; preview.src = ''; }
-
-    await loadThreads();
-    this.disabled = false;
-  });
-
-  // ============================================================
-  // IMAGE PREVIEW
-  // ============================================================
-  document.getElementById('thread-image-input').addEventListener('change', function(e) {
-    const preview = document.getElementById('thread-image-preview');
-    if (this.files && this.files[0]) {
-      const reader = new FileReader();
-      reader.onload = function(ev) { preview.src = ev.target.result; preview.style.display = 'block'; };
-      reader.readAsDataURL(this.files[0]);
-    } else { preview.style.display = 'none'; }
-  });
-
-  document.addEventListener('change', function(e) {
-    const target = e.target;
-    if (target && target.id && target.id.startsWith('reply-image-')) {
-      const threadId = target.id.split('-')[2];
-      const preview = document.getElementById(`reply-image-preview-${threadId}`);
-      if (preview && target.files && target.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(ev) { preview.src = ev.target.result; preview.style.display = 'block'; };
-        reader.readAsDataURL(target.files[0]);
-      } else if (preview) { preview.style.display = 'none'; }
     }
   });
 
