@@ -1,259 +1,1460 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✨ Super Fancy Feed</title>
-    <!-- Fixed favicon (no more 404) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family:"Inter",sans-serif;
-            background:#0b0d15;
-            color:#eef2ff;
-            display:flex;
-            justify-content:center;
-            padding:2rem 1rem;
-            min-height:100vh;
-            background-image:radial-gradient(circle at 10% 20%,rgba(120,119,198,0.15)0%,transparent 50%),
-                             radial-gradient(circle at 90% 80%,rgba(255,119,198,0.15)0%,transparent 50%);
-        }
-        .app-container { max-width:680px; width:100%; }
-        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; padding:0 0.5rem; }
-        .header h1 { font-size:1.8rem; font-weight:700; background:linear-gradient(135deg,#a78bfa,#f472b6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:-0.5px; }
-        .header i { font-size:1.5rem; color:#a78bfa; cursor:default; filter:drop-shadow(0 0 8px rgba(167,139,250,0.3)); }
-        .create-post { background:rgba(255,255,255,0.04); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); border-radius:24px; padding:1.5rem; margin-bottom:2rem; box-shadow:0 20px 40px -12px rgba(0,0,0,0.6); }
-        .create-post textarea { width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:1rem; color:#eef2ff; font-size:0.95rem; font-family:"Inter",sans-serif; resize:vertical; min-height:80px; outline:none; transition:border 0.2s; }
-        .create-post textarea:focus { border-color:#a78bfa; box-shadow:0 0 0 4px rgba(167,139,250,0.15); }
-        .create-post textarea::placeholder { color:#64748b; }
-        .post-actions { display:flex; justify-content:flex-end; margin-top:1rem; gap:1rem; align-items:center; }
-        .post-actions button { background:linear-gradient(135deg,#7c3aed,#db2777); border:none; padding:0.6rem 1.8rem; border-radius:40px; color:white; font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.2s ease; box-shadow:0 4px 15px rgba(124,58,237,0.3); display:flex; align-items:center; gap:8px; }
-        .post-actions button:hover { transform:scale(1.03); box-shadow:0 8px 25px rgba(124,58,237,0.5); }
-        .post-actions button:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
-        .feed-list { display:flex; flex-direction:column; gap:1.25rem; }
-        .post-card { background:rgba(255,255,255,0.04); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.06); border-radius:24px; padding:1.5rem; transition:all 0.25s cubic-bezier(0.2,0,0,1); box-shadow:0 10px 30px -10px rgba(0,0,0,0.4); animation:fadeSlideUp 0.4s ease forwards; opacity:0; }
-        .post-card:hover { border-color:rgba(167,139,250,0.25); transform:translateY(-2px); box-shadow:0 20px 40px -12px rgba(0,0,0,0.7); }
-        @keyframes fadeSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        .post-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem; }
-        .avatar { width:40px; height:40px; border-radius:40px; background:linear-gradient(135deg,#4f46e5,#a78bfa); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:1rem; color:white; flex-shrink:0; box-shadow:0 4px 10px rgba(79,70,229,0.3); }
-        .post-user { font-weight:600; font-size:0.95rem; }
-        .post-user span { color:#94a3b8; font-weight:400; margin-left:6px; font-size:0.8rem; }
-        .post-time { margin-left:auto; font-size:0.75rem; color:#64748b; background:rgba(0,0,0,0.2); padding:4px 10px; border-radius:40px; }
-        .post-content { font-size:1rem; line-height:1.6; color:#f1f5f9; margin-bottom:1rem; word-wrap:break-word; }
-        .post-image { width:100%; max-height:320px; object-fit:cover; border-radius:16px; margin:0.5rem 0 1rem 0; border:1px solid rgba(255,255,255,0.05); }
-        .post-footer { display:flex; align-items:center; gap:1.5rem; padding-top:0.75rem; border-top:1px solid rgba(255,255,255,0.05); }
-        .like-btn { display:flex; align-items:center; gap:6px; background:none; border:none; color:#94a3b8; font-size:0.9rem; cursor:pointer; padding:4px 8px; border-radius:40px; transition:all 0.15s ease; font-family:"Inter",sans-serif; }
-        .like-btn i { font-size:1.1rem; transition:transform 0.2s ease; }
-        .like-btn.liked { color:#f472b6; }
-        .like-btn.liked i { font-weight:900; transform:scale(1.1); animation:pop 0.3s ease; }
-        @keyframes pop { 0% { transform:scale(1); } 50% { transform:scale(1.5); } 100% { transform:scale(1.1); } }
-        .like-btn:hover { color:#eef2ff; }
-        .like-btn.liked:hover { color:#ec4899; }
-        .post-footer .fa-comment { color:#64748b; cursor:default; }
-        .skeleton { background:rgba(255,255,255,0.04); border-radius:24px; padding:1.5rem; border:1px solid rgba(255,255,255,0.04); animation:pulse 1.5s ease-in-out infinite; }
-        @keyframes pulse { 0%,100% { opacity:0.4; } 50% { opacity:0.7; } }
-        .skeleton .line { height:14px; background:rgba(255,255,255,0.06); border-radius:10px; margin-bottom:10px; }
-        .skeleton .line.short { width:40%; }
-        .skeleton .line.long { width:100%; }
-        .empty-state { text-align:center; padding:3rem 1rem; color:#64748b; }
-        .empty-state i { font-size:3rem; margin-bottom:1rem; opacity:0.3; }
-        ::-webkit-scrollbar { width:6px; }
-        ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:#334155; border-radius:10px; }
-        ::-webkit-scrollbar-thumb:hover { background:#475569; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Forum</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script async src="https://js.stripe.com/v3/buy-button.js"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AaZIURGHfoVL0seNGmKhkm3_piU1UERhw7N4TaWhA8DIRRfxZ383l5QqVbyBHfsrB1Hz3H589vd1ZcpI&buyer-country=US&currency=USD&components=buttons&enable-funding=venmo,paylater,card" data-sdk-integration-source="developer-studio"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0b0d17;
+      color: #e4e6eb;
+      padding: 1rem;
+      min-height: 100vh;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+
+    /* ===== SPLASH SCREEN (Guaranteed to show) ===== */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      background: #0b0d17;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    #splash-screen.hidden {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none;
+    }
+    #splash-screen .logo {
+      font-size: 3.2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #38bdf8, #2dd4bf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+    }
+    #splash-screen .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255,255,255,0.08);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #splash-screen p {
+      margin-top: 1.2rem;
+      opacity: 0.4;
+      font-size: 0.9rem;
+      color: #e4e6eb;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #13172b;
+      border-radius: 16px;
+      padding: 0.8rem 1.2rem;
+      margin-bottom: 0.8rem;
+      border: 1px solid #2a2f4b;
+    }
+    .top-bar .logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #38bdf8, #2dd4bf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .top-bar .auth-badge {
+      font-size: 0.8rem;
+      background: #1e2648;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      color: #88b0f0;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-around;
+      background: #13172b;
+      border-radius: 16px;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 1rem;
+      border: 1px solid #2a2f4b;
+      text-align: center;
+    }
+    .stats-row .stat-item { display: flex; flex-direction: column; }
+    .stats-row .num { font-weight: 700; color: #38bdf8; }
+    .stats-row .label { color: #7a82a0; font-size: 0.65rem; text-transform: uppercase; }
+
+    .create-thread {
+      background: #13172b;
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.2rem;
+      border: 1px solid #2a2f4b;
+    }
+    .create-thread h3 { font-weight: 500; font-size: 0.95rem; color: #a0a8c0; margin-bottom: 0.6rem; }
+    .create-thread input, .create-thread textarea {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 0.6rem;
+      background: #0f1426;
+      border: 1px solid #2a2f4b;
+      border-radius: 12px;
+      color: #e4e6eb;
+      font-size: 0.95rem;
+    }
+    .create-thread input:focus, .create-thread textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+    .create-thread textarea { min-height: 70px; resize: vertical; }
+    .create-thread .row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .create-thread .row input { flex: 2; min-width: 120px; }
+    .file-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .file-input-wrapper input[type="file"] { display: none; }
+    .file-input-wrapper label {
+      background: #1e2648;
+      padding: 0.3rem 1rem;
+      border-radius: 30px;
+      color: #88b0f0;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .file-input-wrapper .preview {
+      max-width: 60px;
+      max-height: 60px;
+      border-radius: 8px;
+      border: 1px solid #2a2f4b;
+      display: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+      border: none;
+      padding: 0.5rem 1.4rem;
+      border-radius: 40px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(14,165,233,0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status-msg {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 30px;
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+    .status-msg.sending { color: #fbbf24; }
+    .status-msg.sent { color: #2dd4bf; }
+    .status-msg.error { color: #f43f5e; }
+
+    .admin-post {
+      background: #2a0f1a !important;
+      border: 2px solid #ff0033 !important;
+      box-shadow: 0 0 30px rgba(255,0,51,0.2);
+    }
+    .admin-post .author .name { color: #ff0033 !important; font-weight: 800; }
+    .admin-badge {
+      background: #ff0033; color: #fff; font-size: 0.6rem; padding: 0.15rem 0.6rem;
+      border-radius: 20px; margin-left: 0.4rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .mod-post {
+      background: #1f2a0f !important;
+      border: 2px solid #ff8800 !important;
+      box-shadow: 0 0 30px rgba(255,136,0,0.2);
+    }
+    .mod-post .author .name { color: #ff8800 !important; font-weight: 800; }
+    .mod-badge {
+      background: #ff8800; color: #fff; font-size: 0.6rem; padding: 0.15rem 0.6rem;
+      border-radius: 20px; margin-left: 0.4rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .unverified-post {
+      background: #1a1a2a !important;
+      border: 2px solid rgba(255,255,255,0.2) !important;
+      box-shadow: 0 0 30px rgba(255,255,255,0.05);
+    }
+    .unverified-post .author .name { color: #aaa !important; font-weight: 400; }
+    .unverified-badge {
+      background: rgba(255,255,255,0.1); color: #aaa; font-size: 0.6rem;
+      padding: 0.15rem 0.6rem; border-radius: 20px; margin-left: 0.4rem;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .admin-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .admin-actions .btn-admin {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 0.2rem 1rem;
+      border-radius: 30px;
+      color: #e4e6eb;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .admin-actions .btn-admin:hover {
+      background: rgba(255,255,255,0.12);
+      transform: scale(1.02);
+    }
+    .admin-actions .btn-admin.subscribe {
+      background: linear-gradient(135deg, #ff0066, #ffcc00);
+      border-color: transparent;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(255,0,102,0.3);
+    }
+    .admin-actions .btn-admin.subscribe:hover {
+      box-shadow: 0 0 40px rgba(255,0,102,0.5);
+      transform: scale(1.05);
+    }
+    .admin-actions .btn-admin.follow {
+      background: #1e2648;
+      border-color: #3a4065;
+    }
+    .admin-actions .btn-admin.follow:hover {
+      background: #2a3360;
+    }
+
+    .thread-card {
+      background: #13172b;
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      border: 1px solid #2a2f4b;
+      transition: all 0.2s ease;
+    }
+    .thread-card .author { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+    .thread-card .author img { width: 32px; height: 32px; border-radius: 50%; background: #1e2648; border: 2px solid #2a2f4b; }
+    .thread-card .author .name { font-weight: 600; font-size: 0.9rem; }
+    .thread-card .author .time { font-size: 0.7rem; color: #7a82a0; margin-left: auto; }
+    .thread-card .author .lock-icon { color: #fbbf24; margin-left: 0.3rem; }
+    .thread-card .author .age-icon { color: #fbbf24; margin-left: 0.3rem; }
+    .thread-card h2 { font-size: 1.1rem; font-weight: 600; margin: 0.2rem 0 0.3rem; }
+    .thread-card .content { color: #c8cee0; line-height: 1.4; margin-bottom: 0.5rem; font-size: 0.95rem; word-wrap: break-word; }
+    .thread-card .thread-image { max-width: 100%; border-radius: 12px; margin: 0.5rem 0; max-height: 300px; object-fit: cover; cursor: pointer; }
+    .image-blur { filter: blur(20px); transition: filter 0.3s ease; }
+    .image-blur.unblurred { filter: none; }
+    .thread-card .actions {
+      display: flex;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+      color: #7a82a0;
+      border-top: 1px solid #1e2648;
+      padding-top: 0.5rem;
+      margin-top: 0.3rem;
+    }
+    .thread-card .actions span { display: flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+    .thread-card .actions span i { font-size: 0.9rem; }
+    .thread-card .actions .liked { color: #f43f5e; }
+    .show-replies-btn {
+      background: transparent;
+      border: none;
+      color: #38bdf8;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0.2rem 0;
+      margin-top: 0.3rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .show-replies-btn:hover { text-decoration: underline; }
+
+    .replies-container { margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid #2a2f4b; }
+    .reply-item {
+      background: #0f1426;
+      border-radius: 12px;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #1e2648;
+      transition: all 0.2s ease;
+    }
+    .reply-item .author { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.1rem; }
+    .reply-item .author img { width: 24px; height: 24px; border-radius: 50%; background: #1e2648; }
+    .reply-item .author .name { font-weight: 500; font-size: 0.8rem; }
+    .reply-item .author .time { font-size: 0.65rem; color: #7a82a0; margin-left: auto; }
+    .reply-item .content { font-size: 0.9rem; color: #c8cee0; margin-top: 0.1rem; word-wrap: break-word; }
+    .reply-item .reply-image { max-width: 100%; border-radius: 8px; margin-top: 0.3rem; max-height: 200px; object-fit: cover; cursor: pointer; }
+    .reply-item .admin-post { background: #2a0f1a !important; border: 1px solid #ff0033 !important; }
+    .reply-item .mod-post { background: #1f2a0f !important; border: 1px solid #ff8800 !important; }
+    .reply-item .unverified-post { background: #1a1a2a !important; border: 1px solid rgba(255,255,255,0.2) !important; }
+
+    .reply-form { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .reply-form input, .reply-form textarea {
+      flex: 1;
+      min-width: 80px;
+      padding: 0.4rem 0.7rem;
+      background: #0f1426;
+      border: 1px solid #2a2f4b;
+      border-radius: 20px;
+      color: #e4e6eb;
+      font-size: 0.85rem;
+    }
+    .reply-form textarea { flex-basis: 100%; min-height: 40px; border-radius: 12px; }
+    .reply-form button { background: #1e2648; border: none; padding: 0.4rem 1rem; border-radius: 30px; color: #88b0f0; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
+    .reply-form button:hover { background: #2a3360; color: white; }
+    .reply-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .lock-overlay, .age-overlay {
+      background: rgba(0,0,0,0.85);
+      padding: 1rem;
+      border-radius: 12px;
+      text-align: center;
+      margin: 0.5rem 0;
+    }
+    .lock-overlay input, .age-overlay input {
+      background: #0f1426;
+      border: 1px solid #2a2f4b;
+      color: #e4e6eb;
+      padding: 0.5rem;
+      border-radius: 8px;
+      margin: 0.3rem;
+    }
+    .lock-overlay button, .age-overlay button {
+      background: #0ea5e9;
+      border: none;
+      padding: 0.3rem 1rem;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+    .lock-overlay button:hover, .age-overlay button:hover { background: #0284c7; }
+
+    .threads-loading {
+      text-align: center;
+      padding: 2rem;
+      color: #7a82a0;
+    }
+    .threads-loading i {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #38bdf8;
+    }
+
+    .hidden { display: none !important; }
+    .text-muted { color: #7a82a0; font-size: 0.85rem; }
+
+    @media (max-width: 480px) {
+      .top-bar { flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+      .stats-row .stat-item .num { font-size: 1rem; }
+      .create-thread .row { flex-direction: column; align-items: stretch; }
+      .create-thread .row input { flex: auto; }
+      .btn-primary { width: 100%; justify-content: center; }
+      .admin-actions .btn-admin { font-size: 0.7rem; padding: 0.15rem 0.7rem; }
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(16px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-content {
+      max-width: 820px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: rgba(12,12,24,0.95);
+      backdrop-filter: blur(8px);
+      border-radius: 40px;
+      padding: 2rem 2rem 1.8rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03) inset;
+      transform: scale(0.95) translateY(20px);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease;
+      opacity: 0;
+      position: relative;
+    }
+    .modal-overlay.open .modal-content {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+    .modal-close {
+      position: sticky;
+      top: 0;
+      float: right;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #aaa;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      backdrop-filter: blur(4px);
+      z-index: 10;
+      margin-bottom: 0.5rem;
+    }
+    .modal-close:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      transform: rotate(90deg);
+    }
+    .modal-content .card-header { text-align: center; margin-bottom: 1.5rem; clear: both; }
+    .modal-content .card-header h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff0066, #ffcc00, #00e5ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .modal-content .card-header p { color: rgba(255,255,255,0.3); font-size: 0.95rem; margin-top: 0.2rem; }
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+      margin: 1.5rem 0;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 60px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #fff;
+      font-family: inherit;
+      white-space: nowrap;
+      flex: 1 1 auto;
+    }
+    .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .btn-ghost { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); color: #ccc; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .btn-crypto { background: #f7931a; color: #121212; font-weight: 800; }
+    .btn-crypto:hover { background: #e6850e; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(247,147,26,0.35); }
+    .btn-telegram { background: #0088cc; color: #fff; }
+    .btn-telegram:hover { background: #0077b3; }
+    .btn-safew { background: #1a1a26; color: #00ff88; border: 1px solid #333; }
+    .btn-safew:hover { background: #222236; }
+    .btn-venmo { background: linear-gradient(145deg, #1A8CFF, #0066DD); color: #fff; }
+    .btn-venmo:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,136,255,0.4); }
+    .flex-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 480px) { .grid-2col { grid-template-columns: 1fr; } }
+    .embedded-wrapper {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 16px; padding: 0.8rem 0.5rem; min-height: 70px; width: 100%;
+    }
+    .embedded-wrapper .label {
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.2);
+      margin-bottom: 4px; font-weight: 700;
+    }
+    .embedded-wrapper #paypal-button-container-quick { width: 100%; min-height: 40px; }
+    .embedded-wrapper stripe-buy-button { display: block; width: 100%; }
+    .crypto-toggle {
+      width: 100%; padding: 0.9rem 1.2rem; background: rgba(247,147,26,0.08);
+      border: 1px solid rgba(247,147,26,0.15); border-radius: 60px; color: #f7931a;
+      font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.25s ease;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-family: inherit;
+    }
+    .crypto-toggle:hover { background: rgba(247,147,26,0.15); border-color: #f7931a; transform: translateY(-1px); }
+    .crypto-toggle .arrow { transition: transform 0.3s ease; display: inline-block; }
+    .crypto-toggle.open .arrow { transform: rotate(180deg); }
+    .crypto-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease, opacity 0.4s ease, margin 0.3s ease; opacity: 0; margin-top: 0; }
+    .crypto-content.open { max-height: 1200px; opacity: 1; margin-top: 1.5rem; }
+    .crypto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 640px) { .crypto-grid { grid-template-columns: 1fr; } }
+    .crypto-box {
+      background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.04); border-radius: 20px;
+      padding: 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.8rem;
+    }
+    .crypto-box .title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #777; font-weight: 600; }
+    .crypto-box .address-copy {
+      display: flex; align-items: center; background: #0a0a12; border-radius: 8px; padding: 4px 8px;
+      border: 1px solid #262636; flex-wrap: wrap; gap: 4px;
+    }
+    .crypto-box .address-copy input { flex: 1; background: transparent; border: none; color: #f7931a; font-family: 'Courier New', monospace; font-size: 12px; padding: 6px 4px; outline: none; min-width: 60px; }
+    .crypto-box .copy-btn { background: #f7931a; border: none; color: #121212; font-weight: 700; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; font-family: inherit; }
+    .crypto-box .copy-btn:hover { background: #e6850e; }
+    .crypto-box .disclosure-text { font-size: 12px; line-height: 1.6; color: #aaa; padding: 8px 10px; background: rgba(255,0,0,0.04); border-left: 3px solid #ff4a5a; border-radius: 4px; }
+    .crypto-box .disclosure-text strong { color: #ff6b7a; }
+    .crypto-box .iframe-wrap { width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.04); }
+    .crypto-box .iframe-wrap iframe { display: block; width: 100%; height: 480px; border: 0; background: transparent; }
+    .dropdown-wrapper { margin-top: 0.5rem; }
+    .dropdown-wrapper .sub { color: #7a8aa8; font-size: 0.8rem; margin-bottom: 0.8rem; border-left: 3px solid #222235; padding-left: 0.8rem; }
+    .dropdown { position: relative; width: 100%; }
+    #dropdownBtn {
+      width: 100%; padding: 0.9rem 1.2rem; font-family: inherit; font-size: 0.95rem; font-weight: 550;
+      background: rgba(24,32,46,0.6); color: #ffffff; border: 1px solid rgba(255,255,255,0.06); border-radius: 1.4rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    #dropdownBtn:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4); filter: brightness(1.05); }
+    #dropdownBtn .arrow { transition: transform 0.25s ease; }
+    .dropdown.open #dropdownBtn .arrow { transform: rotate(180deg); }
+    #dropdownMenu {
+      position: absolute; top: calc(100% + 0.6rem); left: 0; width: 100%;
+      background: rgba(23,23,34,0.96); backdrop-filter: blur(8px); border-radius: 1.4rem;
+      box-shadow: 0 20px 48px rgba(0,0,0,0.6); max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height 0.35s ease, opacity 0.25s ease, visibility 0.25s; z-index: 100;
+      border: 1px solid #2a2a3a;
+    }
+    .dropdown.open #dropdownMenu {
+      max-height: 300px; opacity: 1; visibility: visible; overflow-y: auto; padding: 0.5rem 0.4rem;
+    }
+    #dropdownMenu::-webkit-scrollbar { width: 5px; }
+    #dropdownMenu::-webkit-scrollbar-thumb { background: #3a3a4e; border-radius: 20px; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 1.2rem; margin: 0.2rem 0;
+      border-radius: 1rem; font-family: inherit; font-size: 0.85rem; font-weight: 500; color: #fff;
+      border: none; width: 100%; cursor: pointer; transition: transform 0.12s, box-shadow 0.15s;
+      background: rgba(24,32,46,0.4); text-align: left;
+    }
+    .dropdown-item .icon { font-size: 1.2rem; line-height: 1; flex-shrink: 0; width: 1.8rem; text-align: center; }
+    .dropdown-item .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dropdown-item:hover { transform: translateX(4px) scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.3); filter: brightness(1.06); }
+    .footnote { margin-top: 1.2rem; font-size: 11px; color: #555; text-align: center; border-top: 1px solid #1a1a26; padding-top: 1rem; line-height: 1.6; }
+    .footnote a { color: #f7931a; text-decoration: none; }
+    .footnote a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      .modal-content { padding: 1.2rem 1rem; }
+      .modal-content .card-header h1 { font-size: 1.6rem; }
+      .btn { font-size: 0.85rem; padding: 10px 14px; white-space: normal; }
+      .crypto-box .iframe-wrap iframe { height: 360px; }
+    }
+    @media (max-width: 420px) {
+      .crypto-box .iframe-wrap iframe { height: 280px; }
+    }
+  </style>
 </head>
 <body>
-<div class="app-container">
-    <div class="header">
-        <h1><i class="fas fa-bolt" style="margin-right:8px;-webkit-text-fill-color:#a78bfa;"></i> Pulse</h1>
-        <i class="fas fa-circle-nodes"></i>
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div id="splash-screen">
+    <div class="logo"><i class="fas fa-globe-americas"></i> World</div>
+    <div class="spinner"></div>
+    <p>Loading your universe...</p>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="container">
+    <div class="top-bar">
+      <div class="logo"><i class="fas fa-globe-americas"></i> World</div>
+      <div class="auth-badge" id="auth-status"><i class="fas fa-user-secret"></i> Anonymous</div>
     </div>
-    <div class="create-post">
-        <textarea id="postInput" placeholder="What's on your mind, superstar? ✨" rows="2"></textarea>
-        <div class="post-actions">
-            <span style="font-size:0.8rem;color:#475569;"><i class="fas fa-lock" style="margin-right:4px;"></i>anon</span>
-            <button id="publishBtn"><i class="fas fa-paper-plane"></i> Publish</button>
+
+    <div class="stats-row">
+      <div class="stat-item"><span class="num" id="stat-threads">0</span><span class="label">Threads</span></div>
+      <div class="stat-item"><span class="num" id="stat-replies">0</span><span class="label">Replies</span></div>
+      <div class="stat-item"><span class="num" id="stat-online">42</span><span class="label">Online</span></div>
+    </div>
+
+    <div class="create-thread">
+      <h3><i class="fas fa-pen-fancy" style="color:#2dd4bf;"></i> New thread</h3>
+      <input type="text" id="thread-title" placeholder="Title..." />
+      <textarea id="thread-content" placeholder="Write your first post..."></textarea>
+      <div class="file-input-wrapper">
+        <input type="file" id="thread-image-input" accept="image/*" />
+        <label for="thread-image-input"><i class="fas fa-image"></i> Add image</label>
+        <img id="thread-image-preview" class="preview" alt="preview" />
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0;">
+        <label style="display: flex; align-items: center; gap: 0.3rem; color: #aaa;">
+          <input type="checkbox" id="thread-blur" /> Blur image
+        </label>
+        <input type="text" id="thread-password" placeholder="Password lock (optional)" style="flex:1; min-width:120px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
+        <input type="number" id="thread-age" placeholder="Min age (0=none)" style="width:100px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
+      </div>
+      <div class="row" style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;">
+        <input type="text" id="author-name" placeholder="Your name (optional)" style="flex:2; min-width:120px;" />
+        <button class="btn-primary" id="create-thread-btn"><i class="fas fa-paper-plane"></i> Post</button>
+        <span id="thread-status" class="status-msg" style="display:none;"></span>
+      </div>
+    </div>
+
+    <div id="threads-container"></div>
+  </div>
+
+  <!-- ===== SUBSCRIBE MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content" id="modalContent">
+      <button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="card-header">
+        <h1>⚡ All Payment Methods</h1>
+        <p>Choose your preferred way — fast, secure, and private.</p>
+      </div>
+      <div class="grid-2col">
+        <div class="embedded-wrapper">
+          <span class="label">PayPal</span>
+          <div id="paypal-button-container-quick"></div>
         </div>
+        <div class="embedded-wrapper">
+          <span class="label">Stripe</span>
+          <stripe-buy-button buy-button-id="buy_btn_1TqoW5LSIB6IjFRXK9UsvpAT" publishable-key="pk_live_51TKTF4LSIB6IjFRX3lKiYl3vVLCiphsZluzPsi9Zzz4Dxs1AxXqn2tQXwpXlKuzP2ePkXIn45BoqkVRsSVhSczkk00EhKZvS83"></stripe-buy-button>
+        </div>
+      </div>
+      <div class="flex-row" style="margin-top: 0.75rem;">
+        <button class="btn btn-venmo" id="venmoQuickBtn" type="button" style="flex:1;"><i class="fab fa-venmo"></i> Venmo</button>
+        <button class="btn btn-crypto" id="cryptoPayBtn" type="button" style="flex:1;"><i class="fab fa-bitcoin"></i> Crypto</button>
+      </div>
+      <div class="divider"></div>
+      <button class="crypto-toggle" id="cryptoToggle" type="button">
+        <span>🔑 Reveal Crypto &amp; Secure Options</span>
+        <span class="arrow">▾</span>
+      </button>
+      <div class="crypto-content" id="cryptoContent">
+        <div class="crypto-grid">
+          <div class="crypto-box">
+            <span class="title">⚡ Crypto Widget</span>
+            <div class="iframe-wrap">
+              <iframe src="https://nowpayments.io/embeds/payment-widget?iid=5412862639" width="410" height="696" frameborder="0" scrolling="no" style="overflow-y: hidden; width:100%; height:480px; border:0;" loading="lazy"></iframe>
+            </div>
+            <button class="btn btn-crypto" id="directPaymentBtn" type="button" style="width:100%;"><i class="fas fa-external-link-alt"></i> Open payment page</button>
+          </div>
+          <div class="crypto-box">
+            <span class="title">₿ Bitcoin Address</span>
+            <div class="address-copy">
+              <span style="color:#777;font-size:11px;">📬</span>
+              <input type="text" value="bc1qwflupf704dhvwfk8msrzgz7f8x5vmp7hdetm0y" id="btcAddress" readonly>
+              <button class="copy-btn" id="copyBtn" type="button">📋 Copy</button>
+            </div>
+            <div class="disclosure-text">
+              <strong>⚠️ FIAT TERMINATED / POLICY DISCLOSURE</strong>
+              <p style="margin-top:4px;"><strong>EN:</strong> All traditional gateways are blacklisted due to chargeback abuse. Bitcoin transactions are irreversible. No refunds.</p>
+              <p style="margin-top:4px;"><strong>PT:</strong> Gateways tradicionais banidos devido a fraudes. Transações Bitcoin imutáveis. Reembolso zero.</p>
+              <p style="margin-top:4px;"><strong>ZH:</strong> 因恶意申诉欺诈，传统支付已禁用。比特币交易不可篡改，概不退款。</p>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
+              <button class="btn btn-telegram" id="telegramBtn" type="button" style="flex:1;"><i class="fab fa-telegram"></i> Telegram</button>
+              <button class="btn btn-safew" id="safewBtn" type="button" style="flex:1;"><i class="fas fa-shield-alt"></i> Safew</button>
+            </div>
+            <p style="font-size:0.7rem; color:#555; text-align:center; margin-top:0.5rem;">After paying, message us on Telegram or Safew with your TXID.</p>
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="dropdown-wrapper">
+        <div class="sub">💳 Traditional Payment Methods (vetted members only · reference)</div>
+        <div class="dropdown" id="dropdownContainer">
+          <button id="dropdownBtn" type="button">
+            <span class="btn-content"><span class="icon">💳</span><span class="label" id="selectedLabel">Select payment</span></span>
+            <span class="arrow">▾</span>
+          </button>
+          <div id="dropdownMenu"></div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Final Policy:</strong> All Bitcoin payments are final. Legacy platforms are permanently locked for new accounts.
+        <span style="display:block; margin-top:6px;">📩 For support: <a href="https://t.me/Superhelpful" target="_blank">@superhelpful</a></span>
+      </div>
     </div>
-    <div id="feedContainer" class="feed-list"></div>
-</div>
-<script>
-(function() {
-    // ==============================================================
-    //  🔥 YOUR SUPABASE URL AND PUBLISHABLE KEY ARE BOTH HARDCODED
-    // ==============================================================
-    const SUPABASE_URL = "https://bkvvvlaibtbrrkbuxnke.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_ypObXvuLKlTXutfClJfwJQ_rqaG2mRi";
+  </div>
 
-    // ⚠️ DO NOT use the secret key (sb_secret_...) in this client-side code!
-    // It gives full admin access – keep it safe for backend use only.
+  <script>
+    // ============================================================
+    // SUPABASE SETUP
+    // ============================================================
+    const SUPABASE_URL = 'https://divcsisxjrbruduyophx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const feedContainer = document.getElementById('feedContainer');
-    const postInput = document.getElementById('postInput');
-    const publishBtn = document.getElementById('publishBtn');
-    let posts = [];
-    let isSubmitting = false;
-
-    function getTimeAgo(dateString) {
-        const now = new Date();
-        const past = new Date(dateString);
-        const diffMs = now - past;
-        const diffMins = Math.floor(diffMs / 60000);
-        if (diffMins < 1) return 'just now';
-        if (diffMins < 60) return diffMins + 'm ago';
-        const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return diffHours + 'h ago';
-        const diffDays = Math.floor(diffHours / 24);
-        if (diffDays < 7) return diffDays + 'd ago';
-        return past.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    // ============================================================
+    // SPLASH SCREEN CONTROL
+    // ============================================================
+    function hideSplash() {
+      const splash = document.getElementById('splash-screen');
+      if (!splash) return;
+      splash.classList.add('hidden');
+      setTimeout(() => {
+        if (splash.parentNode) splash.remove();
+      }, 800);
     }
 
-    function getInitials(email) {
-        if (!email) return '?';
-        const parts = email.split('@')[0].split(/[._-]/);
-        if (parts.length === 1) return parts[0].substring(0,2).toUpperCase();
-        return (parts[0][0] + parts[1][0]).toUpperCase();
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function sanitizeInput(text) {
+      if (!text) return '';
+      const temp = document.createElement('div');
+      temp.textContent = text;
+      return temp.innerHTML;
     }
 
-    function getColorFromEmail(email) {
-        let hash = 0;
-        for (let i=0; i<email.length; i++) hash = email.charCodeAt(i) + ((hash << 5) - hash);
-        return 'hsl(' + (Math.abs(hash % 360)) + ',70%,55%)';
+    async function sha256(message) {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    function escapeHTML(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    function saveName(name) {
+      if (name && name.trim()) localStorage.setItem('forum_username', name.trim());
+    }
+    function loadName() { return localStorage.getItem('forum_username') || ''; }
+    function getUserName() { const stored = loadName(); return stored || 'Anonymous'; }
+    document.getElementById('author-name').addEventListener('input', function() { saveName(this.value); });
+    document.getElementById('author-name').addEventListener('blur', function() { saveName(this.value); });
+    document.getElementById('author-name').value = loadName();
+    function ensureNameSaved() { saveName(document.getElementById('author-name').value); }
+
+    function getAvatar(name) {
+      const initial = name && name.trim() ? name.charAt(0).toUpperCase() : '?';
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1e2648&color=38bdf8&size=64&bold=true`;
     }
 
-    function renderPosts(postData) {
-        if (!postData || postData.length === 0) {
-            feedContainer.innerHTML = '<div class="empty-state"><i class="fas fa-feather-pointed"></i><p>No posts yet. Be the first to shine! ✨</p></div>';
-            return;
+    function playPopSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.08;
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.05);
+      } catch(e) { /* ignore */ }
+    }
+
+    function triggerHaptics() { if (navigator.vibrate) navigator.vibrate(10); }
+
+    async function uploadImage(file, folder = 'threads') {
+      const fileName = `${Date.now()}_${file.name}`;
+      const filePath = `${folder}/${fileName}`;
+      const { data, error } = await supabaseClient.storage.from('images').upload(filePath, file);
+      if (error) { console.error('Upload error:', error); return null; }
+      const { data: publicUrlData } = supabaseClient.storage.from('images').getPublicUrl(filePath);
+      return publicUrlData.publicUrl;
+    }
+
+    function setStatus(element, message, type = 'sending') {
+      if (!element) return;
+      element.textContent = message;
+      element.className = `status-msg ${type}`;
+      element.style.display = 'inline-block';
+      if (type === 'sent' || type === 'error') {
+        setTimeout(() => { element.style.display = 'none'; }, 3000);
+      }
+    }
+
+    function getUserDisplay(name) {
+      const trimmed = name ? name.trim() : '';
+      if (!trimmed) {
+        return { displayName: 'Unverified', role: 'unverified', badge: '<span class="unverified-badge">Unverified</span>' };
+      }
+      const lower = trimmed.toLowerCase();
+      if (lower === 'admin') {
+        return { displayName: trimmed, role: 'admin', badge: '<span class="admin-badge">Admin</span>' };
+      }
+      if (lower === 'mod') {
+        return { displayName: trimmed, role: 'mod', badge: '<span class="mod-badge">Mod</span>' };
+      }
+      return { displayName: trimmed, role: 'user', badge: '' };
+    }
+
+    // ============================================================
+    // LOAD THREADS
+    // ============================================================
+    async function loadThreads() {
+      const container = document.getElementById('threads-container');
+      container.innerHTML = `<div class="threads-loading"><i class="fas fa-spinner fa-pulse"></i><span>Loading threads...</span></div>`;
+
+      const { data: threads, error } = await supabaseClient.from('threads').select('*').order('created_at', { ascending: false });
+      if (error) {
+        container.innerHTML = `<div class="thread-card" style="border-color:#f43f5e;"><p>❌ Error: ${error.message}</p></div>`;
+        return;
+      }
+
+      document.getElementById('stat-threads').textContent = threads ? threads.length : 0;
+      let totalReplies = 0;
+      if (threads && threads.length > 0) {
+        const threadIds = threads.map(t => t.id);
+        const { count } = await supabaseClient.from('posts').select('*', { count: 'exact', head: true }).in('thread_id', threadIds);
+        if (count !== null) totalReplies = count;
+      }
+      document.getElementById('stat-replies').textContent = totalReplies;
+
+      if (!threads || threads.length === 0) {
+        container.innerHTML = `<div class="thread-card"><p class="text-muted">No threads yet. Start one above!</p></div>`;
+        return;
+      }
+
+      const userName = getUserName();
+      let html = '';
+      for (const t of threads) {
+        const { count: likeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
+        const { count: userLikeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id).eq('user_name', userName);
+        const userLike = userLikeCount > 0;
+        const { count: replyCount } = await supabaseClient.from('posts').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
+
+        const safeTitle = sanitizeInput(t.title);
+        const safeContent = sanitizeInput(t.content || '');
+        const rawAuthor = t.author_name || '';
+        const userInfo = getUserDisplay(rawAuthor);
+        const displayName = userInfo.displayName;
+        const roleClass = userInfo.role === 'admin' ? 'admin-post' :
+                          userInfo.role === 'mod' ? 'mod-post' :
+                          userInfo.role === 'unverified' ? 'unverified-post' : '';
+        const badgeHtml = userInfo.badge;
+
+        let imageHtml = '';
+        if (t.image_url) {
+          const blurredClass = t.blurred ? 'image-blur' : '';
+          const unblurred = localStorage.getItem(`unblurred_${t.id}`) === 'true' ? 'unblurred' : '';
+          const imgClass = `thread-image ${blurredClass} ${unblurred}`.trim();
+          imageHtml = `<img src="${t.image_url}" class="${imgClass}" alt="thread image" onclick="toggleBlur('${t.id}', this)" />`;
         }
-        let html = '';
-        postData.forEach(post => {
-            const initials = getInitials(post.user_email || 'anonymous@user.com');
-            const color = getColorFromEmail(post.user_email || 'anon');
-            const timeAgo = getTimeAgo(post.created_at);
-            const displayName = post.user_email ? post.user_email.split('@')[0] : 'Anonymous';
-            const likeCount = post.likes_count || 0;
-            html += `
-                <div class="post-card" data-id="${post.id}">
-                    <div class="post-header">
-                        <div class="avatar" style="background:${color};">${initials}</div>
-                        <div class="post-user">${displayName} <span>· ${post.user_email || 'anon'}</span></div>
-                        <div class="post-time">${timeAgo}</div>
-                    </div>
-                    <div class="post-content">${escapeHTML(post.content)}</div>
-                    ${post.image_url ? `<img src="${post.image_url}" alt="Post image" class="post-image" loading="lazy" />` : ''}
-                    <div class="post-footer">
-                        <button class="like-btn" data-id="${post.id}">
-                            <i class="fa-regular fa-heart"></i> <span class="like-count">${likeCount}</span>
-                        </button>
-                        <span style="color:#475569;font-size:0.9rem;"><i class="fa-regular fa-comment"></i> 0</span>
-                    </div>
-                </div>
+
+        let lockHtml = '';
+        let passwordVerified = false;
+        if (t.password_hash) {
+          const unlocked = localStorage.getItem(`unlocked_${t.id}`) === 'true';
+          if (!unlocked) {
+            lockHtml = `
+              <div class="lock-overlay">
+                <p><i class="fas fa-lock"></i> This post is password protected.</p>
+                <input type="password" id="pwd-input-${t.id}" placeholder="Enter password" />
+                <button onclick="unlockThread('${t.id}')">Unlock</button>
+                <span id="pwd-error-${t.id}" style="color:#f43f5e; display:block;"></span>
+              </div>
             `;
-        });
-        feedContainer.innerHTML = html;
-        document.querySelectorAll('.like-btn').forEach(btn => btn.addEventListener('click', handleLike));
-    }
-
-    function showSkeletons(count) {
-        count = count || 3;
-        let skelHtml = '';
-        for (let i=0; i<count; i++) {
-            skelHtml += `<div class="skeleton"><div class="line short"></div><div class="line long"></div><div class="line long" style="width:80%;"></div><div class="line short" style="width:30%;margin-bottom:0;"></div></div>`;
+          } else {
+            passwordVerified = true;
+          }
         }
-        feedContainer.innerHTML = skelHtml;
-    }
 
-    async function fetchFeed() {
-        showSkeletons(3);
-        try {
-            const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
-            if (error) throw error;
-            posts = data || [];
-            renderPosts(posts);
-        } catch (err) {
-            console.error('Fetch error:', err);
-            feedContainer.innerHTML = '<div class="empty-state" style="color:#f87171;"><i class="fas fa-circle-exclamation"></i><p>Could not load feed. Check console or RLS policies.</p></div>';
+        let ageHtml = '';
+        let ageVerified = false;
+        if (t.age_required && t.age_required > 0) {
+          const ageOk = localStorage.getItem(`age_verified_${t.id}`) === 'true';
+          if (!ageOk) {
+            ageHtml = `
+              <div class="age-overlay">
+                <p><i class="fas fa-shield-alt"></i> This post requires age ${t.age_required}+.</p>
+                <input type="number" id="age-input-${t.id}" placeholder="Enter your age" />
+                <button onclick="verifyAge('${t.id}', ${t.age_required})">Verify</button>
+                <span id="age-error-${t.id}" style="color:#f43f5e; display:block;"></span>
+              </div>
+            `;
+          } else {
+            ageVerified = true;
+          }
         }
-    }
 
-    async function createPost(content) {
-        if (isSubmitting) return;
-        isSubmitting = true;
-        publishBtn.disabled = true;
-        publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-        try {
-            const newPost = { content: content.trim(), user_email: 'user_' + Math.floor(Math.random()*10000) + '@pulse.local', likes_count: 0 };
-            const { data, error } = await supabase.from('posts').insert([newPost]).select();
-            if (error) throw error;
-            if (data && data.length > 0) { posts.unshift(data[0]); renderPosts(posts); }
-            postInput.value = '';
-        } catch (err) {
-            console.error('Publish error:', err);
-            alert('Failed to publish: ' + err.message);
-        } finally {
-            isSubmitting = false;
-            publishBtn.disabled = false;
-            publishBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Publish';
+        const showContent = (!t.password_hash || passwordVerified) && (!t.age_required || t.age_required === 0 || ageVerified);
+
+        let adminActions = '';
+        if (userInfo.role === 'admin') {
+          adminActions = `
+            <div class="admin-actions">
+              <button class="btn-admin follow" onclick="handleFollow()"><i class="fas fa-user-plus"></i> Follow</button>
+              <button class="btn-admin subscribe" onclick="openSubscribeModal()"><i class="fas fa-crown"></i> Subscribe</button>
+            </div>
+          `;
         }
+
+        const lockIcon = t.password_hash ? `<i class="fas fa-lock lock-icon" title="Password protected"></i>` : '';
+        const ageIcon = t.age_required && t.age_required > 0 ? `<i class="fas fa-shield-alt age-icon" title="Age ${t.age_required}+"></i>` : '';
+
+        html += `
+          <div class="thread-card ${roleClass}" data-thread-id="${t.id}">
+            <div class="author">
+              <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
+              <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
+              <span class="time">${new Date(t.created_at).toLocaleString()}</span>
+              ${lockIcon} ${ageIcon}
+            </div>
+            <h2>${safeTitle}</h2>
+            ${showContent ? `
+              <div class="content">${safeContent}</div>
+              ${imageHtml}
+            ` : `
+              <div class="content" style="opacity:0.3; filter: blur(4px); pointer-events:none;">${safeContent.substring(0, 100)}...</div>
+              ${t.image_url ? `<div style="filter: blur(20px);">${imageHtml}</div>` : ''}
+            `}
+            ${!showContent ? lockHtml + ageHtml : ''}
+            ${adminActions}
+            <div class="actions">
+              <span class="like-toggle ${userLike ? 'liked' : ''}" data-thread="${t.id}" onclick="toggleLike('${t.id}')">
+                <i class="fas fa-heart"></i> <span class="like-count">${likeCount || 0}</span>
+              </span>
+              <span><i class="fas fa-comment"></i> ${replyCount || 0}</span>
+              <span><i class="fas fa-share"></i> Share</span>
+            </div>
+            <div id="replies-${t.id}" class="replies-container hidden"></div>
+            <button class="show-replies-btn" onclick="viewThread('${t.id}')">
+              <i class="fas fa-chevron-down"></i> Show replies
+            </button>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
     }
 
-    async function handleLike(e) {
-        const btn = e.currentTarget;
-        const postId = btn.dataset.id;
-        const likeSpan = btn.querySelector('.like-count');
-        const icon = btn.querySelector('i');
-        const currentLikes = parseInt(likeSpan.textContent, 10) || 0;
-        const isLiked = btn.classList.toggle('liked');
-        const newLikeCount = isLiked ? currentLikes + 1 : currentLikes - 1;
-        likeSpan.textContent = newLikeCount;
-        icon.className = isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
-        const postIndex = posts.findIndex(p => String(p.id) === String(postId));
-        if (postIndex !== -1) posts[postIndex].likes_count = newLikeCount;
-        try {
-            const { error } = await supabase.from('posts').update({ likes_count: newLikeCount }).eq('id', postId);
-            if (error) console.error('Like update error:', error);
-        } catch (err) { console.error('Like fetch error:', err); }
-    }
+    // ============================================================
+    // BLUR, UNLOCK, AGE
+    // ============================================================
+    window.toggleBlur = function(threadId, imgElement) {
+      const current = imgElement.classList.contains('unblurred');
+      if (current) {
+        imgElement.classList.remove('unblurred');
+        localStorage.setItem(`unblurred_${threadId}`, 'false');
+      } else {
+        imgElement.classList.add('unblurred');
+        localStorage.setItem(`unblurred_${threadId}`, 'true');
+      }
+    };
 
-    function subscribeToNewPosts() {
-        supabase.channel('public:posts')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-                const newPost = payload.new;
-                if (posts.some(p => p.id === newPost.id)) return;
-                posts.unshift(newPost);
-                renderPosts(posts);
-            })
-            .subscribe((status, err) => { if (err) console.error('Realtime error:', err); });
-    }
+    window.unlockThread = async function(threadId) {
+      const input = document.getElementById(`pwd-input-${threadId}`);
+      const errorSpan = document.getElementById(`pwd-error-${threadId}`);
+      const entered = input.value;
+      if (!entered) { errorSpan.textContent = 'Enter a password.'; return; }
 
-    publishBtn.addEventListener('click', async () => {
-        const content = postInput.value.trim();
-        if (!content) { postInput.focus(); postInput.style.borderColor = '#f87171'; setTimeout(() => postInput.style.borderColor = '', 1500); return; }
-        await createPost(content);
+      const { data, error } = await supabaseClient.from('threads').select('password_hash').eq('id', threadId).single();
+      if (error) { errorSpan.textContent = 'Error fetching password.'; return; }
+      const enteredHash = await sha256(entered);
+      if (enteredHash === data.password_hash) {
+        localStorage.setItem(`unlocked_${threadId}`, 'true');
+        loadThreads();
+      } else {
+        errorSpan.textContent = 'Incorrect password.';
+      }
+    };
+
+    window.verifyAge = function(threadId, requiredAge) {
+      const input = document.getElementById(`age-input-${threadId}`);
+      const errorSpan = document.getElementById(`age-error-${threadId}`);
+      const age = parseInt(input.value);
+      if (isNaN(age) || age < requiredAge) {
+        errorSpan.textContent = `You must be at least ${requiredAge} years old.`;
+        return;
+      }
+      localStorage.setItem(`age_verified_${threadId}`, 'true');
+      loadThreads();
+    };
+
+    // ============================================================
+    // LIKE
+    // ============================================================
+    window.toggleLike = async function(threadId) {
+      const userName = getUserName();
+      const likeToggle = document.querySelector(`.like-toggle[data-thread="${threadId}"]`);
+      if (!likeToggle) return;
+
+      const { data: existing } = await supabaseClient.from('likes').select('*').eq('thread_id', parseInt(threadId)).eq('user_name', userName);
+      if (existing && existing.length > 0) {
+        const { error } = await supabaseClient.from('likes').delete().eq('thread_id', parseInt(threadId)).eq('user_name', userName);
+        if (error) { alert('Error: ' + error.message); return; }
+      } else {
+        const { error } = await supabaseClient.from('likes').insert([{ thread_id: parseInt(threadId), user_name: userName }]);
+        if (error) { alert('Error: ' + error.message); return; }
+        triggerHaptics();
+        playPopSound();
+      }
+      loadThreads();
+    };
+
+    // ============================================================
+    // VIEW REPLIES
+    // ============================================================
+    window.viewThread = async function(threadId) {
+      const container = document.getElementById(`replies-${threadId}`);
+      if (!container) return;
+
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        const { data: posts, error } = await supabaseClient.from('posts').select('*').eq('thread_id', threadId).order('created_at', { ascending: true });
+        if (error) {
+          container.innerHTML = `<p style="color:#f43f5e;">❌ Error: ${error.message}</p>`;
+          return;
+        }
+
+        let html = '';
+        if (!posts || posts.length === 0) {
+          html = '<p class="text-muted">No replies yet. Be the first!</p>';
+        } else {
+          html = posts.map(p => {
+            const rawAuthor = p.author_name || '';
+            const userInfo = getUserDisplay(rawAuthor);
+            const displayName = userInfo.displayName;
+            const roleClass = userInfo.role === 'admin' ? 'admin-post' :
+                              userInfo.role === 'mod' ? 'mod-post' :
+                              userInfo.role === 'unverified' ? 'unverified-post' : '';
+            const badgeHtml = userInfo.badge;
+            const safeContent = sanitizeInput(p.content);
+            return `
+              <div class="reply-item ${roleClass}">
+                <div class="author">
+                  <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
+                  <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
+                  <span class="time">${new Date(p.created_at).toLocaleString()}</span>
+                </div>
+                <div class="content">${safeContent}</div>
+                ${p.image_url ? `<img src="${p.image_url}" class="reply-image" />` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+
+        html += `
+          <div class="reply-form">
+            <input type="text" id="reply-author-${threadId}" placeholder="Your name" />
+            <textarea id="reply-content-${threadId}" placeholder="Write a reply..." rows="2"></textarea>
+            <div class="file-input-wrapper" style="flex-basis:100%;">
+              <input type="file" id="reply-image-${threadId}" accept="image/*" />
+              <label for="reply-image-${threadId}" style="font-size:0.75rem;"><i class="fas fa-image"></i> Add image</label>
+              <img id="reply-image-preview-${threadId}" class="preview" />
+            </div>
+            <button onclick="addReply('${threadId}')"><i class="fas fa-reply"></i> Reply</button>
+            <span id="reply-status-${threadId}" class="status-msg" style="display:none;"></span>
+          </div>
+        `;
+        container.innerHTML = html;
+        setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+      } else {
+        container.classList.add('hidden');
+      }
+    };
+
+    // ============================================================
+    // ADD REPLY
+    // ============================================================
+    window.addReply = async function(threadId) {
+      const authorInput = document.getElementById(`reply-author-${threadId}`);
+      const contentInput = document.getElementById(`reply-content-${threadId}`);
+      const imageInput = document.getElementById(`reply-image-${threadId}`);
+      const statusEl = document.getElementById(`reply-status-${threadId}`);
+      const btn = document.querySelector(`#replies-${threadId} .reply-form button`);
+
+      const rawAuthor = authorInput.value.trim();
+      const rawContent = contentInput.value.trim();
+      if (!rawContent) { alert('Write something.'); return; }
+
+      const author = rawAuthor;
+      const content = sanitizeInput(rawContent);
+
+      btn.disabled = true;
+      setStatus(statusEl, 'Sending...', 'sending');
+
+      let imageUrl = null;
+      if (imageInput && imageInput.files && imageInput.files[0]) {
+        const file = imageInput.files[0];
+        imageUrl = await uploadImage(file, 'replies');
+        if (!imageUrl) {
+          setStatus(statusEl, 'Image upload failed', 'error');
+          btn.disabled = false;
+          return;
+        }
+      }
+
+      const { error } = await supabaseClient.from('posts').insert([{
+        thread_id: parseInt(threadId),
+        author_name: author,
+        content: content,
+        image_url: imageUrl
+      }]);
+
+      if (error) {
+        setStatus(statusEl, 'Failed: ' + error.message, 'error');
+        btn.disabled = false;
+        return;
+      }
+
+      setStatus(statusEl, 'Sent! ✅', 'sent');
+      authorInput.value = '';
+      contentInput.value = '';
+      if (imageInput) imageInput.value = '';
+      const preview = document.getElementById(`reply-image-preview-${threadId}`);
+      if (preview) { preview.style.display = 'none'; preview.src = ''; }
+
+      playPopSound();
+      triggerHaptics();
+
+      await viewThread(threadId);
+      loadThreads();
+      btn.disabled = false;
+    };
+
+    // ============================================================
+    // CREATE THREAD
+    // ============================================================
+    document.getElementById('create-thread-btn').addEventListener('click', async function() {
+      ensureNameSaved();
+      const titleInput = document.getElementById('thread-title');
+      const contentInput = document.getElementById('thread-content');
+      const authorInput = document.getElementById('author-name');
+      const imageInput = document.getElementById('thread-image-input');
+      const blurCheck = document.getElementById('thread-blur');
+      const passwordInput = document.getElementById('thread-password');
+      const ageInput = document.getElementById('thread-age');
+      const statusEl = document.getElementById('thread-status');
+
+      const rawTitle = titleInput.value.trim();
+      const rawContent = contentInput.value.trim();
+      const rawAuthor = authorInput.value.trim();
+      if (!rawTitle) { alert('Enter a title.'); return; }
+
+      const title = sanitizeInput(rawTitle);
+      const content = sanitizeInput(rawContent);
+      const author = rawAuthor;
+      const blurred = blurCheck.checked;
+      let password_hash = null;
+      const password = passwordInput.value.trim();
+      if (password) {
+        password_hash = await sha256(password);
+      }
+      const age_required = parseInt(ageInput.value) || 0;
+
+      this.disabled = true;
+      setStatus(statusEl, 'Sending...', 'sending');
+
+      let imageUrl = null;
+      if (imageInput && imageInput.files && imageInput.files[0]) {
+        const file = imageInput.files[0];
+        imageUrl = await uploadImage(file, 'threads');
+        if (!imageUrl) {
+          setStatus(statusEl, 'Image upload failed', 'error');
+          this.disabled = false;
+          return;
+        }
+      }
+
+      const { error } = await supabaseClient.from('threads').insert([{
+        title: title,
+        content: content,
+        author_name: author,
+        image_url: imageUrl,
+        blurred: blurred,
+        password_hash: password_hash,
+        age_required: age_required
+      }]);
+
+      if (error) {
+        setStatus(statusEl, 'Failed: ' + error.message, 'error');
+        this.disabled = false;
+        return;
+      }
+
+      setStatus(statusEl, 'Sent! ✅', 'sent');
+      titleInput.value = '';
+      contentInput.value = '';
+      authorInput.value = '';
+      imageInput.value = '';
+      document.getElementById('thread-image-preview').style.display = 'none';
+      blurCheck.checked = false;
+      passwordInput.value = '';
+      ageInput.value = '';
+      loadThreads();
+      this.disabled = false;
     });
 
-    postInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); publishBtn.click(); }
+    // ============================================================
+    // IMAGE PREVIEW
+    // ============================================================
+    document.getElementById('thread-image-input').addEventListener('change', function(e) {
+      const preview = document.getElementById('thread-image-preview');
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(ev) { preview.src = ev.target.result; preview.style.display = 'block'; };
+        reader.readAsDataURL(this.files[0]);
+      } else { preview.style.display = 'none'; }
     });
 
-    fetchFeed();
-    subscribeToNewPosts();
-})();
-</script>
+    document.addEventListener('change', function(e) {
+      const target = e.target;
+      if (target && target.id && target.id.startsWith('reply-image-')) {
+        const threadId = target.id.split('-')[2];
+        const preview = document.getElementById(`reply-image-preview-${threadId}`);
+        if (preview && target.files && target.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(ev) { preview.src = ev.target.result; preview.style.display = 'block'; };
+          reader.readAsDataURL(target.files[0]);
+        } else if (preview) { preview.style.display = 'none'; }
+      }
+    });
+
+    // ============================================================
+    // ADMIN ACTIONS
+    // ============================================================
+    window.handleFollow = function() {
+      alert('Follow functionality coming soon!');
+    };
+
+    window.openSubscribeModal = function() {
+      document.getElementById('modalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+
+    // ============================================================
+    // MODAL CONTROLS
+    // ============================================================
+    document.getElementById('modalCloseBtn').addEventListener('click', function() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    });
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) {
+        document.getElementById('modalOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.getElementById('modalOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // ============================================================
+    // PAYMENT MODAL SCRIPTS
+    // ============================================================
+    let paypalRendered = false;
+    function renderPayPal() {
+      const container = document.getElementById('paypal-button-container-quick');
+      if (!container || typeof paypal === 'undefined' || paypalRendered) return;
+      paypal.Buttons({
+        createOrder: function(data, actions) {
+          return actions.order.create({ purchase_units: [{ amount: { value: '10.00' } }] });
+        },
+        onApprove: function(data, actions) {
+          return actions.order.capture().then(function(details) {
+            alert('✅ PayPal completed by ' + details.payer.name.given_name);
+          });
+        },
+        onError: function(err) { alert('❌ PayPal error: ' + err.message); },
+        onCancel: function() { alert('⏹️ PayPal cancelled.'); }
+      }).render(container);
+      paypalRendered = true;
+    }
+
+    document.getElementById('venmoQuickBtn')?.addEventListener('click', function() {
+      window.open('https://account.venmo.com/u/Viraldancando', '_blank');
+    });
+    document.getElementById('cryptoPayBtn')?.addEventListener('click', function() {
+      window.open('https://nowpayments.io/payment/?iid=5412862639&source=button', '_blank');
+    });
+    document.getElementById('directPaymentBtn')?.addEventListener('click', function() {
+      window.open('https://nowpayments.io/payment/?iid=5412862639', '_blank');
+    });
+
+    const toggleBtn = document.getElementById('cryptoToggle');
+    const content = document.getElementById('cryptoContent');
+    toggleBtn?.addEventListener('click', function() {
+      const isOpen = content.classList.toggle('open');
+      toggleBtn.classList.toggle('open');
+      toggleBtn.querySelector('span:last-child').textContent = isOpen ? '▴' : '▾';
+    });
+
+    function copyAddress() {
+      var addrInput = document.getElementById('btcAddress');
+      addrInput.select();
+      addrInput.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(addrInput.value).then(() => {
+        var btn = document.getElementById('copyBtn');
+        var original = btn.innerText;
+        btn.innerText = '✅ Copied!';
+        setTimeout(() => { btn.innerText = original; }, 2000);
+      }).catch(() => {
+        document.execCommand('copy');
+        var btn = document.getElementById('copyBtn');
+        var original = btn.innerText;
+        btn.innerText = '✅ Copied!';
+        setTimeout(() => { btn.innerText = original; }, 2000);
+      });
+    }
+    document.getElementById('copyBtn')?.addEventListener('click', copyAddress);
+
+    document.getElementById('telegramBtn')?.addEventListener('click', function() {
+      window.open('https://t.me/Superhelpful', '_blank');
+    });
+    document.getElementById('safewBtn')?.addEventListener('click', function() {
+      window.open('https://sfw.vc/superhelpful', '_blank');
+    });
+
+    const processors = [
+      { name: 'PayPal', icon: '🅿️', bg: '#003087' },
+      { name: 'Stripe', icon: '⚡', bg: '#635bff' },
+      { name: 'Square', icon: '▣', bg: '#00693e' },
+      { name: 'Visa', icon: '💳', bg: '#1a1f71' },
+      { name: 'Mastercard', icon: '💳', bg: '#eb001b' },
+      { name: 'Amex', icon: '💳', bg: '#006fcf' },
+      { name: 'Discover', icon: '💳', bg: '#ff6000' },
+      { name: 'Apple Pay', icon: '⌘', bg: '#000000' },
+      { name: 'Google Pay', icon: '▶', bg: '#4285f4' },
+      { name: 'Amazon Pay', icon: '🛒', bg: '#ff9900' },
+      { name: 'Venmo', icon: '💙', bg: '#3d95ce' },
+      { name: 'Cash App', icon: '💰', bg: '#00d632' },
+      { name: 'Klarna', icon: '🌸', bg: '#ffb3c7' },
+      { name: 'Afterpay', icon: '✨', bg: '#b2fce4' },
+      { name: 'Affirm', icon: '✓', bg: '#4a4af4' },
+      { name: 'Braintree', icon: '🌳', bg: '#0b3b5c' },
+      { name: 'Adyen', icon: '🔷', bg: '#0abf53' },
+      { name: 'Worldpay', icon: '🌐', bg: '#f47920' },
+      { name: '2Checkout', icon: '✔️', bg: '#1c3c6b' },
+      { name: 'PayU', icon: '💸', bg: '#0033a0' },
+      { name: 'Skrill', icon: '💧', bg: '#1d2b5b' },
+      { name: 'Neteller', icon: '💛', bg: '#f5b800' },
+      { name: 'Paysafe', icon: '🔒', bg: '#0066b3' },
+      { name: 'Alipay', icon: '🟦', bg: '#1677ff' },
+      { name: 'WeChat Pay', icon: '💚', bg: '#07c160' },
+      { name: 'G Pay', icon: '🟢', bg: '#1a73e8' },
+      { name: 'Samsung Pay', icon: '📱', bg: '#1428a0' },
+      { name: 'Bancontact', icon: '🇧🇪', bg: '#0053a4' },
+      { name: 'iDEAL', icon: '🇳🇱', bg: '#cc0033' },
+      { name: 'Giropay', icon: '🇩🇪', bg: '#ffcc00' },
+      { name: 'Przelewy24', icon: '🇵🇱', bg: '#e6007e' },
+      { name: 'Crypto.com', icon: '₿', bg: '#0b1426' },
+      { name: 'BitPay', icon: '₿', bg: '#1a2a3a' }
+    ];
+
+    const containerDropdown = document.getElementById('dropdownContainer');
+    const btnDropdown = document.getElementById('dropdownBtn');
+    const selectedLabel = document.getElementById('selectedLabel');
+    const menu = document.getElementById('dropdownMenu');
+
+    processors.forEach(p => {
+      const item = document.createElement('button');
+      item.className = 'dropdown-item';
+      item.style.backgroundColor = p.bg;
+      item.style.color = '#fff';
+      if (p.bg === '#ffb3c7' || p.bg === '#b2fce4' || p.bg === '#f5b800' || p.bg === '#ffcc00' || p.bg === '#ff9900' || p.bg === '#00d632') {
+        item.style.color = '#1a1a1a';
+        item.style.border = '1px solid rgba(255,255,255,0.08)';
+      }
+      item.innerHTML = `<span class="icon">${p.icon}</span><span class="name">${p.name}</span>`;
+
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        btnDropdown.style.backgroundColor = p.bg;
+        btnDropdown.style.color = (p.bg === '#ffb3c7' || p.bg === '#b2fce4' || p.bg === '#f5b800' || p.bg === '#ffcc00' || p.bg === '#ff9900' || p.bg === '#00d632') ? '#1a1a1a' : '#fff';
+        const iconSpan = btnDropdown.querySelector('.btn-content .icon');
+        iconSpan.textContent = p.icon;
+        selectedLabel.textContent = p.name;
+        containerDropdown.classList.remove('open');
+      });
+      menu.appendChild(item);
+    });
+
+    btnDropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+      containerDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', () => {
+      containerDropdown.classList.remove('open');
+    });
+    menu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') containerDropdown.classList.remove('open');
+    });
+
+    document.getElementById('modalOverlay').addEventListener('transitionend', function(e) {
+      if (e.target === this && this.classList.contains('open')) {
+        renderPayPal();
+      }
+    });
+
+    // ============================================================
+    // AUTH
+    // ============================================================
+    async function checkAuth() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const status = document.getElementById('auth-status');
+      if (session) status.innerHTML = `<i class="fas fa-check-circle" style="color:#2dd4bf;"></i> ${session.user.email}`;
+      else status.innerHTML = `<i class="fas fa-user-secret"></i> Anonymous`;
+    }
+
+    // ============================================================
+    // INIT – GUARANTEED SPLASH SCREEN VISIBILITY
+    // ============================================================
+    async function init() {
+      const startTime = Date.now();
+      
+      try {
+        await loadThreads();
+        await checkAuth();
+      } catch (e) {
+        console.error('Init error:', e);
+      } finally {
+        // Calculate how long loading took
+        const elapsedTime = Date.now() - startTime;
+        const minDisplayTime = 600; // Guarantee splash is visible for at least 600ms to prevent flicker
+        
+        // If it loaded super fast, wait the remainder of the 600ms. If it took longer, hide immediately.
+        const delay = Math.max(0, minDisplayTime - elapsedTime);
+        
+        setTimeout(() => {
+          hideSplash();
+        }, delay);
+      }
+    }
+
+    // Defer init by 50ms to guarantee the browser has painted the splash screen first
+    setTimeout(init, 50);
+  </script>
 </body>
 </html>
