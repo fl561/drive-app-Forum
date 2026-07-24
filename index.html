@@ -5,156 +5,512 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>World Forum</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #111; color: #eee; }
-    .thread { border: 1px solid #333; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
-    .thread h2 { margin: 0; }
-    .thread small { color: #888; }
-    .btn { background: #0ea5e9; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
-    .btn:hover { background: #0284c7; }
-    input, textarea { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; background: #222; border: 1px solid #444; color: #eee; border-radius: 4px; }
-    .hidden { display: none; }
+    /* ---------- RESET ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0b0d17;
+      color: #e4e6eb;
+      padding: 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* ---------- TOP BAR (logo + auth) ---------- */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #13172b;
+      border-radius: 16px;
+      padding: 0.8rem 1.2rem;
+      margin-bottom: 0.8rem;
+      border: 1px solid #2a2f4b;
+    }
+    .top-bar .logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #38bdf8, #2dd4bf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .top-bar .logo i { -webkit-text-fill-color: #38bdf8; }
+    .top-bar .auth-badge {
+      font-size: 0.8rem;
+      background: #1e2648;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      color: #88b0f0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* ---------- STATS ROW ---------- */
+    .stats-row {
+      display: flex;
+      justify-content: space-around;
+      background: #13172b;
+      border-radius: 16px;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 1rem;
+      border: 1px solid #2a2f4b;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .stats-row .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .stats-row .stat-item .num {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .stats-row .stat-item .label {
+      color: #7a82a0;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ---------- CREATE THREAD ---------- */
+    .create-thread {
+      background: #13172b;
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.2rem;
+      border: 1px solid #2a2f4b;
+    }
+    .create-thread h3 {
+      font-weight: 500;
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+      color: #a0a8c0;
+    }
+    .create-thread input, .create-thread textarea {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 0.6rem;
+      background: #0f1426;
+      border: 1px solid #2a2f4b;
+      border-radius: 12px;
+      color: #e4e6eb;
+      font-size: 0.95rem;
+    }
+    .create-thread input:focus, .create-thread textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+    .create-thread textarea { min-height: 70px; resize: vertical; }
+    .create-thread .row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .create-thread .row input { flex: 2; min-width: 120px; }
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+      border: none;
+      padding: 0.5rem 1.4rem;
+      border-radius: 40px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+    .btn-primary:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+    }
+
+    /* ---------- FEED (THREAD CARDS) ---------- */
+    .thread-card {
+      background: #13172b;
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      border: 1px solid #2a2f4b;
+    }
+    .thread-card .author {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.4rem;
+    }
+    .thread-card .author img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1e2648;
+      border: 2px solid #2a2f4b;
+    }
+    .thread-card .author .name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .thread-card .author .time {
+      font-size: 0.7rem;
+      color: #7a82a0;
+      margin-left: auto;
+    }
+    .thread-card h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0.2rem 0 0.3rem;
+    }
+    .thread-card .content {
+      color: #c8cee0;
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    .thread-card .actions {
+      display: flex;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+      color: #7a82a0;
+      border-top: 1px solid #1e2648;
+      padding-top: 0.5rem;
+      margin-top: 0.3rem;
+    }
+    .thread-card .actions span {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .thread-card .actions span i { font-size: 0.9rem; }
+    .thread-card .show-replies-btn {
+      background: transparent;
+      border: none;
+      color: #38bdf8;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0.2rem 0;
+      margin-top: 0.3rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .thread-card .show-replies-btn:hover { text-decoration: underline; }
+
+    /* ---------- REPLIES ---------- */
+    .replies-container {
+      margin-top: 0.8rem;
+      padding-left: 1rem;
+      border-left: 2px solid #2a2f4b;
+    }
+    .reply-item {
+      background: #0f1426;
+      border-radius: 12px;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #1e2648;
+    }
+    .reply-item .author {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.1rem;
+    }
+    .reply-item .author img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1e2648;
+    }
+    .reply-item .author .name {
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+    .reply-item .author .time {
+      font-size: 0.65rem;
+      color: #7a82a0;
+      margin-left: auto;
+    }
+    .reply-item .content {
+      font-size: 0.9rem;
+      color: #c8cee0;
+      margin-top: 0.1rem;
+    }
+    .reply-form {
+      margin-top: 0.6rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .reply-form input, .reply-form textarea {
+      flex: 1;
+      min-width: 80px;
+      padding: 0.4rem 0.7rem;
+      background: #0f1426;
+      border: 1px solid #2a2f4b;
+      border-radius: 20px;
+      color: #e4e6eb;
+      font-size: 0.85rem;
+    }
+    .reply-form textarea {
+      flex-basis: 100%;
+      min-height: 40px;
+      border-radius: 12px;
+    }
+    .reply-form button {
+      background: #1e2648;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 30px;
+      color: #88b0f0;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .reply-form button:hover { background: #2a3360; color: white; }
+
+    /* ---------- UTILITY ---------- */
+    .hidden { display: none !important; }
+    .text-muted { color: #7a82a0; font-size: 0.85rem; }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #7a82a0;
+    }
+    .loading i { font-size: 1.8rem; display: block; margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
-  <h1>🌍 World Forum</h1>
-  <div id="auth-status">Loading...</div>
-  <hr />
 
-  <div id="new-thread-form">
-    <h3>Start a new thread</h3>
-    <input type="text" id="thread-title" placeholder="Thread title" />
-    <textarea id="thread-content" placeholder="Write your first post..." rows="3"></textarea>
-    <input type="text" id="author-name" placeholder="Your name" />
-    <button class="btn" id="create-thread-btn">Create Thread</button>
+<div class="container">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="logo">
+      <i class="fas fa-globe-americas"></i> World
+    </div>
+    <div class="auth-badge" id="auth-status">
+      <i class="fas fa-user-secret"></i> Anonymous
+    </div>
   </div>
-  <hr />
 
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="num" id="stat-threads">0</span>
+      <span class="label">Threads</span>
+    </div>
+    <div class="stat-item">
+      <span class="num" id="stat-replies">0</span>
+      <span class="label">Replies</span>
+    </div>
+    <div class="stat-item">
+      <span class="num" id="stat-online">42</span>
+      <span class="label">Online</span>
+    </div>
+  </div>
+
+  <!-- CREATE THREAD -->
+  <div class="create-thread">
+    <h3><i class="fas fa-pen-fancy" style="color:#2dd4bf;"></i> New thread</h3>
+    <input type="text" id="thread-title" placeholder="Title..." />
+    <textarea id="thread-content" placeholder="Write your first post..."></textarea>
+    <div class="row">
+      <input type="text" id="author-name" placeholder="Your name (optional)" />
+      <button class="btn-primary" id="create-thread-btn">
+        <i class="fas fa-paper-plane"></i> Post
+      </button>
+    </div>
+  </div>
+
+  <!-- FEED -->
   <div id="threads-container">
-    <p>Loading threads...</p>
+    <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading threads...</div>
   </div>
+</div>
 
-  <script>
-    const SUPABASE_URL = 'https://divcsisxjrbruduyophx.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+  // =============================================================
+  // IDENTICAL LOGIC – NO CHANGES TO BACKEND
+  // =============================================================
 
-    async function loadThreads() {
-      const container = document.getElementById('threads-container');
-      const { data: threads, error } = await supabaseClient
-        .from('threads')
+  const SUPABASE_URL = 'https://divcsisxjrbruduyophx.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getAvatar(name) {
+    const initial = name ? name.charAt(0).toUpperCase() : '?';
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1e2648&color=38bdf8&size=64&bold=true`;
+  }
+
+  async function loadThreads() {
+    const container = document.getElementById('threads-container');
+    const { data: threads, error } = await supabaseClient
+      .from('threads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      container.innerHTML = `<div class="thread-card" style="border-color:#f43f5e;"><p>❌ Error: ${error.message}</p></div>`;
+      return;
+    }
+
+    // Update stats
+    document.getElementById('stat-threads').textContent = threads ? threads.length : 0;
+    // Count replies (we'll count by querying posts, but for simplicity we'll fetch total later)
+    // We'll compute total replies from all threads
+    let totalReplies = 0;
+    if (threads && threads.length > 0) {
+      const threadIds = threads.map(t => t.id);
+      const { count, error: countErr } = await supabaseClient
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .in('thread_id', threadIds);
+      if (!countErr && count !== null) totalReplies = count;
+    }
+    document.getElementById('stat-replies').textContent = totalReplies;
+
+    if (!threads || threads.length === 0) {
+      container.innerHTML = `<div class="thread-card"><p class="text-muted">No threads yet. Start one above!</p></div>`;
+      return;
+    }
+
+    let html = '';
+    for (const t of threads) {
+      // Get reply count for this thread (we already have total, but for each we can get individually)
+      const { count, error: countErr } = await supabaseClient
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('thread_id', t.id);
+      const replyCount = (countErr || !count) ? 0 : count;
+
+      html += `
+        <div class="thread-card" data-thread-id="${t.id}">
+          <div class="author">
+            <img src="${getAvatar(t.author_name || 'Anonymous')}" alt="" />
+            <span class="name">${t.author_name || 'Anonymous'}</span>
+            <span class="time">${new Date(t.created_at).toLocaleString()}</span>
+          </div>
+          <h2>${t.title}</h2>
+          <div class="content">${t.content || ''}</div>
+          <div class="actions">
+            <span><i class="fas fa-comment"></i> ${replyCount}</span>
+            <span><i class="fas fa-heart" style="color:#f43f5e;"></i> 0</span>
+            <span><i class="fas fa-share"></i> Share</span>
+          </div>
+          <div id="replies-${t.id}" class="replies-container hidden"></div>
+          <button class="show-replies-btn" onclick="viewThread('${t.id}')">
+            <i class="fas fa-chevron-down"></i> Show replies
+          </button>
+        </div>
+      `;
+    }
+    container.innerHTML = html;
+  }
+
+  window.viewThread = async function(threadId) {
+    const container = document.getElementById(`replies-${threadId}`);
+    if (!container) return;
+
+    if (container.classList.contains('hidden')) {
+      container.classList.remove('hidden');
+      const { data: posts, error } = await supabaseClient
+        .from('posts')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
 
       if (error) {
-        container.innerHTML = `<p>❌ Error: ${error.message}</p>`;
-        return;
-      }
-      if (!threads || threads.length === 0) {
-        container.innerHTML = '<p>No threads yet. Start one above!</p>';
+        container.innerHTML = `<p style="color:#f43f5e;">❌ Error: ${error.message}</p>`;
         return;
       }
 
-      container.innerHTML = threads.map(t => `
-        <div class="thread">
-          <h2>${t.title}</h2>
-          <p>${t.content || ''}</p>
-          <small>By ${t.author_name || 'Anonymous'} · ${new Date(t.created_at).toLocaleString()}</small>
-          <br />
-          <button class="btn" onclick="viewThread('${t.id}')">View Replies</button>
-          <div id="replies-${t.id}"></div>
-        </div>
-      `).join('');
-    }
-
-    window.viewThread = async function(threadId) {
-      const container = document.getElementById(`replies-${threadId}`);
-      if (!container) return;
-
-      if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        const { data: posts, error } = await supabaseClient
-          .from('posts')
-          .select('*')
-          .eq('thread_id', threadId)
-          .order('created_at', { ascending: true });
-
-        if (error) {
-          container.innerHTML = `<p>❌ Error: ${error.message}</p>`;
-          return;
-        }
-        if (!posts || posts.length === 0) {
-          container.innerHTML = '<p>No replies yet.</p>';
-        } else {
-          container.innerHTML = posts.map(p => `
-            <div style="border-left:2px solid #0ea5e9; padding-left:1rem; margin:0.5rem 0;">
-              <p>${p.content}</p>
-              <small>By ${p.author_name || 'Anonymous'} · ${new Date(p.created_at).toLocaleString()}</small>
+      let html = '';
+      if (!posts || posts.length === 0) {
+        html = '<p class="text-muted">No replies yet. Be the first!</p>';
+      } else {
+        html = posts.map(p => `
+          <div class="reply-item">
+            <div class="author">
+              <img src="${getAvatar(p.author_name || 'Anonymous')}" alt="" />
+              <span class="name">${p.author_name || 'Anonymous'}</span>
+              <span class="time">${new Date(p.created_at).toLocaleString()}</span>
             </div>
-          `).join('');
-        }
+            <div class="content">${p.content}</div>
+          </div>
+        `).join('');
+      }
 
-        const form = document.createElement('div');
-        form.innerHTML = `
-          <hr />
+      html += `
+        <div class="reply-form">
           <input type="text" id="reply-author-${threadId}" placeholder="Your name" />
           <textarea id="reply-content-${threadId}" placeholder="Write a reply..." rows="2"></textarea>
-          <button class="btn" onclick="addReply('${threadId}')">Post Reply</button>
-        `;
-        container.appendChild(form);
-      } else {
-        container.classList.add('hidden');
-      }
-    };
-
-    window.addReply = async function(threadId) {
-      const authorInput = document.getElementById(`reply-author-${threadId}`);
-      const contentInput = document.getElementById(`reply-content-${threadId}`);
-      const author = authorInput.value.trim() || 'Anonymous';
-      const content = contentInput.value.trim();
-      if (!content) { alert('Write something.'); return; }
-
-      const { error } = await supabaseClient
-        .from('posts')
-        .insert([{ thread_id: parseInt(threadId), author_name: author, content: content }]);
-
-      if (error) { alert('❌ Error: ' + error.message); return; }
-
-      authorInput.value = '';
-      contentInput.value = '';
-      await viewThread(threadId);
-    };
-
-    document.getElementById('create-thread-btn').addEventListener('click', async function() {
-      const title = document.getElementById('thread-title').value.trim();
-      const content = document.getElementById('thread-content').value.trim();
-      const author = document.getElementById('author-name').value.trim() || 'Anonymous';
-      if (!title) { alert('Enter a title.'); return; }
-
-      const { error } = await supabaseClient
-        .from('threads')
-        .insert([{ title, content, author_name: author }]);
-
-      if (error) { alert('❌ Error: ' + error.message); return; }
-
-      document.getElementById('thread-title').value = '';
-      document.getElementById('thread-content').value = '';
-      document.getElementById('author-name').value = '';
-      await loadThreads();
-    });
-
-    loadThreads();
-
-    async function checkAuth() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const status = document.getElementById('auth-status');
-      if (session) {
-        status.innerHTML = `✅ Logged in as ${session.user.email}`;
-      } else {
-        status.innerHTML = '🔓 Not logged in (you can still post anonymously)';
-      }
+          <button onclick="addReply('${threadId}')"><i class="fas fa-reply"></i> Reply</button>
+        </div>
+      `;
+      container.innerHTML = html;
+    } else {
+      container.classList.add('hidden');
     }
-    checkAuth();
-  </script>
+  };
+
+  window.addReply = async function(threadId) {
+    const authorInput = document.getElementById(`reply-author-${threadId}`);
+    const contentInput = document.getElementById(`reply-content-${threadId}`);
+    const author = authorInput.value.trim() || 'Anonymous';
+    const content = contentInput.value.trim();
+    if (!content) { alert('Write something.'); return; }
+
+    const { error } = await supabaseClient
+      .from('posts')
+      .insert([{ thread_id: parseInt(threadId), author_name: author, content: content }]);
+
+    if (error) { alert('❌ Error: ' + error.message); return; }
+
+    authorInput.value = '';
+    contentInput.value = '';
+    await viewThread(threadId);
+    loadThreads(); // refresh stats and reply counts
+  };
+
+  document.getElementById('create-thread-btn').addEventListener('click', async function() {
+    const title = document.getElementById('thread-title').value.trim();
+    const content = document.getElementById('thread-content').value.trim();
+    const author = document.getElementById('author-name').value.trim() || 'Anonymous';
+    if (!title) { alert('Enter a title.'); return; }
+
+    const { error } = await supabaseClient
+      .from('threads')
+      .insert([{ title, content, author_name: author }]);
+
+    if (error) { alert('❌ Error: ' + error.message); return; }
+
+    document.getElementById('thread-title').value = '';
+    document.getElementById('thread-content').value = '';
+    document.getElementById('author-name').value = '';
+    loadThreads();
+  });
+
+  async function checkAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const status = document.getElementById('auth-status');
+    if (session) {
+      status.innerHTML = `<i class="fas fa-check-circle" style="color:#2dd4bf;"></i> ${session.user.email}`;
+    } else {
+      status.innerHTML = `<i class="fas fa-user-secret"></i> Anonymous`;
+    }
+  }
+
+  loadThreads();
+  checkAuth();
+</script>
 </body>
 </html>
