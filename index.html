@@ -121,7 +121,6 @@
     .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(14,165,233,0.3); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Status message */
     .status-msg {
       font-size: 0.85rem;
       padding: 0.3rem 0.8rem;
@@ -261,20 +260,17 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Helper: get current user name (or Anonymous)
   function getUserName() {
     const nameInput = document.getElementById('author-name');
     if (nameInput) {
       const val = nameInput.value.trim();
       if (val) return val;
     }
-    // Check if there's a stored name in localStorage
     const stored = localStorage.getItem('forum_username');
     if (stored) return stored;
     return 'Anonymous';
   }
 
-  // Set and store user name
   document.getElementById('author-name').addEventListener('change', function() {
     if (this.value.trim()) {
       localStorage.setItem('forum_username', this.value.trim());
@@ -313,7 +309,6 @@
     return publicUrlData.publicUrl;
   }
 
-  // Set status message
   function setStatus(element, message, type = 'sending') {
     if (!element) return;
     element.textContent = message;
@@ -324,7 +319,6 @@
     }
   }
 
-  // LOAD THREADS
   async function loadThreads() {
     const container = document.getElementById('threads-container');
     container.innerHTML = `
@@ -388,7 +382,6 @@
     container.innerHTML = html;
   }
 
-  // TOGGLE LIKE (fixed)
   window.toggleLike = async function(threadId) {
     const userName = getUserName();
     const likeToggle = document.querySelector(`.like-toggle[data-thread="${threadId}"]`);
@@ -408,7 +401,6 @@
     loadThreads();
   };
 
-  // VIEW REPLIES
   window.viewThread = async function(threadId) {
     const container = document.getElementById(`replies-${threadId}`);
     if (!container) return;
@@ -458,7 +450,6 @@
     }
   };
 
-  // ADD REPLY (with status)
   window.addReply = async function(threadId) {
     const authorInput = document.getElementById(`reply-author-${threadId}`);
     const contentInput = document.getElementById(`reply-content-${threadId}`);
@@ -512,7 +503,6 @@
     btn.disabled = false;
   };
 
-  // CREATE THREAD (with status)
   document.getElementById('create-thread-btn').addEventListener('click', async function() {
     const title = document.getElementById('thread-title').value.trim();
     const content = document.getElementById('thread-content').value.trim();
@@ -537,8 +527,8 @@
     }
 
     const { error } = await supabaseClient.from('threads').insert([{
-      title,
-      content,
+      title: title,
+      content: content,
       author_name: author,
       image_url: imageUrl
     }]);
@@ -561,7 +551,6 @@
     this.disabled = false;
   });
 
-  // Image previews
   document.getElementById('thread-image-input').addEventListener('change', function(e) {
     const preview = document.getElementById('thread-image-preview');
     if (this.files && this.files[0]) {
@@ -584,7 +573,6 @@
     }
   });
 
-  // Auth
   async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     const status = document.getElementById('auth-status');
@@ -592,7 +580,6 @@
     else status.innerHTML = `<i class="fas fa-user-secret"></i> Anonymous`;
   }
 
-  // Initial load
   loadThreads();
   checkAuth();
 </script>
