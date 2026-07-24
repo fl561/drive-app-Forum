@@ -260,23 +260,42 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_PSpZ4GImD-mCAau3F2U6LA_W757gdMM';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  function getUserName() {
-    const nameInput = document.getElementById('author-name');
-    if (nameInput) {
-      const val = nameInput.value.trim();
-      if (val) return val;
+  // ----- NAME PERSISTENCE (SAVES EVERYWHERE) -----
+  function saveName(name) {
+    if (name && name.trim()) {
+      localStorage.setItem('forum_username', name.trim());
     }
-    const stored = localStorage.getItem('forum_username');
-    if (stored) return stored;
-    return 'Anonymous';
   }
 
-  document.getElementById('author-name').addEventListener('change', function() {
-    if (this.value.trim()) {
-      localStorage.setItem('forum_username', this.value.trim());
-    }
+  function loadName() {
+    return localStorage.getItem('forum_username') || '';
+  }
+
+  function getUserName() {
+    const stored = loadName();
+    return stored || 'Anonymous';
+  }
+
+  // Save on input
+  document.getElementById('author-name').addEventListener('input', function() {
+    saveName(this.value);
   });
 
+  // Save on blur (in case they don't type but paste)
+  document.getElementById('author-name').addEventListener('blur', function() {
+    saveName(this.value);
+  });
+
+  // Load on page load
+  document.getElementById('author-name').value = loadName();
+
+  // Also save before posting (just to be safe)
+  function ensureNameSaved() {
+    const input = document.getElementById('author-name');
+    saveName(input.value);
+  }
+
+  // ----- REST OF THE CODE (UNCHANGED) -----
   function getAvatar(name) {
     const initial = name ? name.charAt(0).toUpperCase() : '?';
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1e2648&color=38bdf8&size=64&bold=true`;
@@ -504,6 +523,9 @@
   };
 
   document.getElementById('create-thread-btn').addEventListener('click', async function() {
+    // Save name before posting
+    ensureNameSaved();
+
     const title = document.getElementById('thread-title').value.trim();
     const content = document.getElementById('thread-content').value.trim();
     const author = document.getElementById('author-name').value.trim() || 'Anonymous';
