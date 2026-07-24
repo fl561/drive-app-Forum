@@ -6,9 +6,8 @@
   <title>World Forum</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-  <script async src="https://js.stripe.com/v3/buy-button.js"></script>
-  <script src="https://www.paypal.com/sdk/js?client-id=AaZIURGHfoVL0seNGmKhkm3_piU1UERhw7N4TaWhA8DIRRfxZ383l5QqVbyBHfsrB1Hz3H589vd1ZcpI&buyer-country=US&currency=USD&components=buttons&enable-funding=venmo,paylater,card" data-sdk-integration-source="developer-studio"></script>
   <style>
+    /* ===== RESET & BASE ===== */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
@@ -16,54 +15,77 @@
       color: #e4e6eb;
       padding: 1rem;
       min-height: 100vh;
+      overflow: hidden;
     }
     .container { max-width: 720px; margin: 0 auto; }
 
-    /* ===== SPLASH SCREEN (Guaranteed to show) ===== */
-    #splash-screen {
+    /* ===== INTRO OVERLAY ===== */
+    .intro-overlay {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: #0b0d17;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      z-index: 999999;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
-      opacity: 1 !important;
-      visibility: visible !important;
+      align-items: center;
+      z-index: 9999;
+      animation: fadeOutContainer 0.6s ease-in-out forwards 2.8s;
     }
-    #splash-screen.hidden {
-      opacity: 0 !important;
-      visibility: hidden !important;
-      pointer-events: none;
-    }
-    #splash-screen .logo {
-      font-size: 3.2rem;
+    .intro-logo {
+      font-size: 4rem;
       font-weight: 900;
-      background: linear-gradient(135deg, #38bdf8, #2dd4bf);
+      letter-spacing: 4px;
+      background: linear-gradient(45deg, #38bdf8, #2dd4bf);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 1rem;
+      opacity: 0;
+      transform: scale(0.8);
+      animation: zoomIn 1.2s ease-out forwards 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    #splash-screen .spinner {
+    .intro-logo i { -webkit-text-fill-color: #38bdf8; }
+    .intro-text {
+      font-size: 1.2rem;
+      color: #7a82a0;
+      margin-top: 16px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideUp 0.8s ease-out forwards 1s;
+    }
+    .intro-loader {
+      margin-top: 2rem;
       width: 48px;
       height: 48px;
-      border: 4px solid rgba(255,255,255,0.08);
+      border: 3px solid rgba(255,255,255,0.06);
       border-top-color: #38bdf8;
       border-radius: 50%;
-      animation: spin 0.9s linear infinite;
+      animation: spin 1s linear infinite, fadeInLoader 0.6s ease-out forwards 1.6s;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    #splash-screen p {
-      margin-top: 1.2rem;
-      opacity: 0.4;
-      font-size: 0.9rem;
-      color: #e4e6eb;
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes zoomIn { to { opacity: 1; transform: scale(1); } }
+    @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInLoader { to { opacity: 1; } }
+    @keyframes fadeOutContainer {
+      to {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
     }
 
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      opacity: 0;
+      animation: fadeInContent 0.6s ease-out forwards 3.2s;
+    }
+    @keyframes fadeInContent { to { opacity: 1; } }
+
+    /* ===== TOP BAR ===== */
     .top-bar {
       display: flex;
       justify-content: space-between;
@@ -73,6 +95,8 @@
       padding: 0.8rem 1.2rem;
       margin-bottom: 0.8rem;
       border: 1px solid #2a2f4b;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
     .top-bar .logo {
       font-size: 1.4rem;
@@ -84,6 +108,18 @@
       align-items: center;
       gap: 0.5rem;
     }
+    .top-bar .visitor-badge {
+      background: #1e2648;
+      padding: 0.3rem 1rem;
+      border-radius: 20px;
+      color: #88b0f0;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid #2a2f4b;
+    }
+    .top-bar .visitor-badge i { color: #38bdf8; }
     .top-bar .auth-badge {
       font-size: 0.8rem;
       background: #1e2648;
@@ -92,6 +128,7 @@
       color: #88b0f0;
     }
 
+    /* ===== STATS ROW ===== */
     .stats-row {
       display: flex;
       justify-content: space-around;
@@ -103,9 +140,10 @@
       text-align: center;
     }
     .stats-row .stat-item { display: flex; flex-direction: column; }
-    .stats-row .num { font-weight: 700; color: #38bdf8; }
-    .stats-row .label { color: #7a82a0; font-size: 0.65rem; text-transform: uppercase; }
+    .stats-row .num { font-weight: 700; color: #38bdf8; font-size: 1.2rem; }
+    .stats-row .label { color: #7a82a0; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
+    /* ===== CREATE THREAD ===== */
     .create-thread {
       background: #13172b;
       border-radius: 16px;
@@ -179,35 +217,22 @@
     .status-msg.sent { color: #2dd4bf; }
     .status-msg.error { color: #f43f5e; }
 
-    .admin-post {
-      background: #2a0f1a !important;
-      border: 2px solid #ff0033 !important;
-      box-shadow: 0 0 30px rgba(255,0,51,0.2);
-    }
+    /* ===== ROLE TINTS ===== */
+    .admin-post { background: #2a0f1a !important; border: 2px solid #ff0033 !important; box-shadow: 0 0 30px rgba(255,0,51,0.2); }
     .admin-post .author .name { color: #ff0033 !important; font-weight: 800; }
     .admin-badge {
       background: #ff0033; color: #fff; font-size: 0.6rem; padding: 0.15rem 0.6rem;
       border-radius: 20px; margin-left: 0.4rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
-    .mod-post {
-      background: #1f2a0f !important;
-      border: 2px solid #ff8800 !important;
-      box-shadow: 0 0 30px rgba(255,136,0,0.2);
-    }
+    .mod-post { background: #1f2a0f !important; border: 2px solid #ff8800 !important; box-shadow: 0 0 30px rgba(255,136,0,0.2); }
     .mod-post .author .name { color: #ff8800 !important; font-weight: 800; }
     .mod-badge {
       background: #ff8800; color: #fff; font-size: 0.6rem; padding: 0.15rem 0.6rem;
       border-radius: 20px; margin-left: 0.4rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
-    .unverified-post {
-      background: #1a1a2a !important;
-      border: 2px solid rgba(255,255,255,0.2) !important;
-      box-shadow: 0 0 30px rgba(255,255,255,0.05);
-    }
+    .unverified-post { background: #1a1a2a !important; border: 2px solid rgba(255,255,255,0.2) !important; box-shadow: 0 0 30px rgba(255,255,255,0.05); }
     .unverified-post .author .name { color: #aaa !important; font-weight: 400; }
     .unverified-badge {
       background: rgba(255,255,255,0.1); color: #aaa; font-size: 0.6rem;
@@ -216,19 +241,14 @@
       border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .admin-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .admin-actions .btn-admin {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 0.2rem 1rem;
-      border-radius: 30px;
-      color: #e4e6eb;
-      font-size: 0.75rem;
+    /* ===== DELETE BUTTON ===== */
+    .delete-btn {
+      background: rgba(255,0,0,0.15) !important;
+      border: 1px solid rgba(255,0,0,0.3) !important;
+      color: #ff6b6b !important;
+      padding: 0.15rem 0.8rem !important;
+      border-radius: 30px !important;
+      font-size: 0.7rem !important;
       cursor: pointer;
       transition: 0.2s;
       font-weight: 500;
@@ -236,29 +256,16 @@
       align-items: center;
       gap: 0.3rem;
     }
-    .admin-actions .btn-admin:hover {
-      background: rgba(255,255,255,0.12);
-      transform: scale(1.02);
-    }
-    .admin-actions .btn-admin.subscribe {
-      background: linear-gradient(135deg, #ff0066, #ffcc00);
-      border-color: transparent;
-      color: #fff;
-      font-weight: 700;
-      box-shadow: 0 0 20px rgba(255,0,102,0.3);
-    }
-    .admin-actions .btn-admin.subscribe:hover {
-      box-shadow: 0 0 40px rgba(255,0,102,0.5);
+    .delete-btn:hover {
+      background: rgba(255,0,0,0.25) !important;
+      border-color: #ff0033 !important;
+      color: #fff !important;
       transform: scale(1.05);
     }
-    .admin-actions .btn-admin.follow {
-      background: #1e2648;
-      border-color: #3a4065;
-    }
-    .admin-actions .btn-admin.follow:hover {
-      background: #2a3360;
-    }
 
+    .my-post { border-left-color: #38bdf8 !important; border-left-width: 5px; }
+
+    /* ===== THREAD CARD ===== */
     .thread-card {
       background: #13172b;
       border-radius: 16px;
@@ -267,12 +274,13 @@
       border: 1px solid #2a2f4b;
       transition: all 0.2s ease;
     }
-    .thread-card .author { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+    .thread-card .author { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
     .thread-card .author img { width: 32px; height: 32px; border-radius: 50%; background: #1e2648; border: 2px solid #2a2f4b; }
     .thread-card .author .name { font-weight: 600; font-size: 0.9rem; }
     .thread-card .author .time { font-size: 0.7rem; color: #7a82a0; margin-left: auto; }
     .thread-card .author .lock-icon { color: #fbbf24; margin-left: 0.3rem; }
     .thread-card .author .age-icon { color: #fbbf24; margin-left: 0.3rem; }
+    .thread-card .author .delete-wrap { margin-left: auto; display: flex; align-items: center; gap: 0.3rem; }
     .thread-card h2 { font-size: 1.1rem; font-weight: 600; margin: 0.2rem 0 0.3rem; }
     .thread-card .content { color: #c8cee0; line-height: 1.4; margin-bottom: 0.5rem; font-size: 0.95rem; word-wrap: break-word; }
     .thread-card .thread-image { max-width: 100%; border-radius: 12px; margin: 0.5rem 0; max-height: 300px; object-fit: cover; cursor: pointer; }
@@ -286,6 +294,7 @@
       border-top: 1px solid #1e2648;
       padding-top: 0.5rem;
       margin-top: 0.3rem;
+      flex-wrap: wrap;
     }
     .thread-card .actions span { display: flex; align-items: center; gap: 0.3rem; cursor: pointer; }
     .thread-card .actions span i { font-size: 0.9rem; }
@@ -304,6 +313,7 @@
     }
     .show-replies-btn:hover { text-decoration: underline; }
 
+    /* ===== REPLIES ===== */
     .replies-container { margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid #2a2f4b; }
     .reply-item {
       background: #0f1426;
@@ -313,15 +323,17 @@
       border: 1px solid #1e2648;
       transition: all 0.2s ease;
     }
-    .reply-item .author { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.1rem; }
+    .reply-item .author { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.1rem; flex-wrap: wrap; }
     .reply-item .author img { width: 24px; height: 24px; border-radius: 50%; background: #1e2648; }
     .reply-item .author .name { font-weight: 500; font-size: 0.8rem; }
     .reply-item .author .time { font-size: 0.65rem; color: #7a82a0; margin-left: auto; }
+    .reply-item .author .delete-wrap { margin-left: auto; display: flex; align-items: center; gap: 0.3rem; }
     .reply-item .content { font-size: 0.9rem; color: #c8cee0; margin-top: 0.1rem; word-wrap: break-word; }
     .reply-item .reply-image { max-width: 100%; border-radius: 8px; margin-top: 0.3rem; max-height: 200px; object-fit: cover; cursor: pointer; }
     .reply-item .admin-post { background: #2a0f1a !important; border: 1px solid #ff0033 !important; }
     .reply-item .mod-post { background: #1f2a0f !important; border: 1px solid #ff8800 !important; }
     .reply-item .unverified-post { background: #1a1a2a !important; border: 1px solid rgba(255,255,255,0.2) !important; }
+    .reply-item.my-post { border-left: 3px solid #38bdf8 !important; border-left-width: 4px; }
 
     .reply-form { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .reply-form input, .reply-form textarea {
@@ -339,6 +351,7 @@
     .reply-form button:hover { background: #2a3360; color: white; }
     .reply-form button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    /* ===== LOCK / AGE OVERLAYS ===== */
     .lock-overlay, .age-overlay {
       background: rgba(0,0,0,0.85);
       padding: 1rem;
@@ -364,17 +377,13 @@
     }
     .lock-overlay button:hover, .age-overlay button:hover { background: #0284c7; }
 
+    /* ===== LOADING ===== */
     .threads-loading {
       text-align: center;
       padding: 2rem;
       color: #7a82a0;
     }
-    .threads-loading i {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 0.5rem;
-      color: #38bdf8;
-    }
+    .threads-loading i { font-size: 2rem; display: block; margin-bottom: 0.5rem; color: #38bdf8; }
 
     .hidden { display: none !important; }
     .text-muted { color: #7a82a0; font-size: 0.85rem; }
@@ -385,334 +394,75 @@
       .create-thread .row { flex-direction: column; align-items: stretch; }
       .create-thread .row input { flex: auto; }
       .btn-primary { width: 100%; justify-content: center; }
-      .admin-actions .btn-admin { font-size: 0.7rem; padding: 0.15rem 0.7rem; }
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(16px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-    .modal-overlay.open {
-      display: flex;
-      opacity: 1;
-    }
-    .modal-content {
-      max-width: 820px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      background: rgba(12,12,24,0.95);
-      backdrop-filter: blur(8px);
-      border-radius: 40px;
-      padding: 2rem 2rem 1.8rem;
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03) inset;
-      transform: scale(0.95) translateY(20px);
-      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease;
-      opacity: 0;
-      position: relative;
-    }
-    .modal-overlay.open .modal-content {
-      transform: scale(1) translateY(0);
-      opacity: 1;
-    }
-    .modal-close {
-      position: sticky;
-      top: 0;
-      float: right;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06);
-      color: #aaa;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      font-size: 1.4rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: inherit;
-      backdrop-filter: blur(4px);
-      z-index: 10;
-      margin-bottom: 0.5rem;
-    }
-    .modal-close:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      transform: rotate(90deg);
-    }
-    .modal-content .card-header { text-align: center; margin-bottom: 1.5rem; clear: both; }
-    .modal-content .card-header h1 {
-      font-size: 2.2rem;
-      font-weight: 900;
-      background: linear-gradient(135deg, #ff0066, #ffcc00, #00e5ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
-    }
-    .modal-content .card-header p { color: rgba(255,255,255,0.3); font-size: 0.95rem; margin-top: 0.2rem; }
-    .divider {
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-      margin: 1.5rem 0;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border-radius: 60px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      color: #fff;
-      font-family: inherit;
-      white-space: nowrap;
-      flex: 1 1 auto;
-    }
-    .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-    .btn-ghost { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); color: #ccc; }
-    .btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .btn-crypto { background: #f7931a; color: #121212; font-weight: 800; }
-    .btn-crypto:hover { background: #e6850e; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(247,147,26,0.35); }
-    .btn-telegram { background: #0088cc; color: #fff; }
-    .btn-telegram:hover { background: #0077b3; }
-    .btn-safew { background: #1a1a26; color: #00ff88; border: 1px solid #333; }
-    .btn-safew:hover { background: #222236; }
-    .btn-venmo { background: linear-gradient(145deg, #1A8CFF, #0066DD); color: #fff; }
-    .btn-venmo:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,136,255,0.4); }
-    .flex-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    @media (max-width: 480px) { .grid-2col { grid-template-columns: 1fr; } }
-    .embedded-wrapper {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 16px; padding: 0.8rem 0.5rem; min-height: 70px; width: 100%;
-    }
-    .embedded-wrapper .label {
-      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.2);
-      margin-bottom: 4px; font-weight: 700;
-    }
-    .embedded-wrapper #paypal-button-container-quick { width: 100%; min-height: 40px; }
-    .embedded-wrapper stripe-buy-button { display: block; width: 100%; }
-    .crypto-toggle {
-      width: 100%; padding: 0.9rem 1.2rem; background: rgba(247,147,26,0.08);
-      border: 1px solid rgba(247,147,26,0.15); border-radius: 60px; color: #f7931a;
-      font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.25s ease;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      font-family: inherit;
-    }
-    .crypto-toggle:hover { background: rgba(247,147,26,0.15); border-color: #f7931a; transform: translateY(-1px); }
-    .crypto-toggle .arrow { transition: transform 0.3s ease; display: inline-block; }
-    .crypto-toggle.open .arrow { transform: rotate(180deg); }
-    .crypto-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease, opacity 0.4s ease, margin 0.3s ease; opacity: 0; margin-top: 0; }
-    .crypto-content.open { max-height: 1200px; opacity: 1; margin-top: 1.5rem; }
-    .crypto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    @media (max-width: 640px) { .crypto-grid { grid-template-columns: 1fr; } }
-    .crypto-box {
-      background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.04); border-radius: 20px;
-      padding: 1.2rem 1rem; display: flex; flex-direction: column; gap: 0.8rem;
-    }
-    .crypto-box .title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #777; font-weight: 600; }
-    .crypto-box .address-copy {
-      display: flex; align-items: center; background: #0a0a12; border-radius: 8px; padding: 4px 8px;
-      border: 1px solid #262636; flex-wrap: wrap; gap: 4px;
-    }
-    .crypto-box .address-copy input { flex: 1; background: transparent; border: none; color: #f7931a; font-family: 'Courier New', monospace; font-size: 12px; padding: 6px 4px; outline: none; min-width: 60px; }
-    .crypto-box .copy-btn { background: #f7931a; border: none; color: #121212; font-weight: 700; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; font-family: inherit; }
-    .crypto-box .copy-btn:hover { background: #e6850e; }
-    .crypto-box .disclosure-text { font-size: 12px; line-height: 1.6; color: #aaa; padding: 8px 10px; background: rgba(255,0,0,0.04); border-left: 3px solid #ff4a5a; border-radius: 4px; }
-    .crypto-box .disclosure-text strong { color: #ff6b7a; }
-    .crypto-box .iframe-wrap { width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.04); }
-    .crypto-box .iframe-wrap iframe { display: block; width: 100%; height: 480px; border: 0; background: transparent; }
-    .dropdown-wrapper { margin-top: 0.5rem; }
-    .dropdown-wrapper .sub { color: #7a8aa8; font-size: 0.8rem; margin-bottom: 0.8rem; border-left: 3px solid #222235; padding-left: 0.8rem; }
-    .dropdown { position: relative; width: 100%; }
-    #dropdownBtn {
-      width: 100%; padding: 0.9rem 1.2rem; font-family: inherit; font-size: 0.95rem; font-weight: 550;
-      background: rgba(24,32,46,0.6); color: #ffffff; border: 1px solid rgba(255,255,255,0.06); border-radius: 1.4rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    #dropdownBtn:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4); filter: brightness(1.05); }
-    #dropdownBtn .arrow { transition: transform 0.25s ease; }
-    .dropdown.open #dropdownBtn .arrow { transform: rotate(180deg); }
-    #dropdownMenu {
-      position: absolute; top: calc(100% + 0.6rem); left: 0; width: 100%;
-      background: rgba(23,23,34,0.96); backdrop-filter: blur(8px); border-radius: 1.4rem;
-      box-shadow: 0 20px 48px rgba(0,0,0,0.6); max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
-      transition: max-height 0.35s ease, opacity 0.25s ease, visibility 0.25s; z-index: 100;
-      border: 1px solid #2a2a3a;
-    }
-    .dropdown.open #dropdownMenu {
-      max-height: 300px; opacity: 1; visibility: visible; overflow-y: auto; padding: 0.5rem 0.4rem;
-    }
-    #dropdownMenu::-webkit-scrollbar { width: 5px; }
-    #dropdownMenu::-webkit-scrollbar-thumb { background: #3a3a4e; border-radius: 20px; }
-    .dropdown-item {
-      display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 1.2rem; margin: 0.2rem 0;
-      border-radius: 1rem; font-family: inherit; font-size: 0.85rem; font-weight: 500; color: #fff;
-      border: none; width: 100%; cursor: pointer; transition: transform 0.12s, box-shadow 0.15s;
-      background: rgba(24,32,46,0.4); text-align: left;
-    }
-    .dropdown-item .icon { font-size: 1.2rem; line-height: 1; flex-shrink: 0; width: 1.8rem; text-align: center; }
-    .dropdown-item .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .dropdown-item:hover { transform: translateX(4px) scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.3); filter: brightness(1.06); }
-    .footnote { margin-top: 1.2rem; font-size: 11px; color: #555; text-align: center; border-top: 1px solid #1a1a26; padding-top: 1rem; line-height: 1.6; }
-    .footnote a { color: #f7931a; text-decoration: none; }
-    .footnote a:hover { text-decoration: underline; }
-    @media (max-width: 600px) {
-      .modal-content { padding: 1.2rem 1rem; }
-      .modal-content .card-header h1 { font-size: 1.6rem; }
-      .btn { font-size: 0.85rem; padding: 10px 14px; white-space: normal; }
-      .crypto-box .iframe-wrap iframe { height: 360px; }
-    }
-    @media (max-width: 420px) {
-      .crypto-box .iframe-wrap iframe { height: 280px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ===== SPLASH SCREEN ===== -->
-  <div id="splash-screen">
-    <div class="logo"><i class="fas fa-globe-americas"></i> World</div>
-    <div class="spinner"></div>
-    <p>Loading your universe...</p>
+  <!-- ===== INTRO OVERLAY ===== -->
+  <div class="intro-overlay">
+    <div class="intro-logo"><i class="fas fa-globe-americas"></i> World</div>
+    <div class="intro-text">Your universe awaits</div>
+    <div class="intro-loader"></div>
   </div>
 
   <!-- ===== MAIN CONTENT ===== -->
-  <div class="container">
-    <div class="top-bar">
-      <div class="logo"><i class="fas fa-globe-americas"></i> World</div>
-      <div class="auth-badge" id="auth-status"><i class="fas fa-user-secret"></i> Anonymous</div>
-    </div>
+  <div class="main-content">
+    <div class="container">
 
-    <div class="stats-row">
-      <div class="stat-item"><span class="num" id="stat-threads">0</span><span class="label">Threads</span></div>
-      <div class="stat-item"><span class="num" id="stat-replies">0</span><span class="label">Replies</span></div>
-      <div class="stat-item"><span class="num" id="stat-online">42</span><span class="label">Online</span></div>
-    </div>
-
-    <div class="create-thread">
-      <h3><i class="fas fa-pen-fancy" style="color:#2dd4bf;"></i> New thread</h3>
-      <input type="text" id="thread-title" placeholder="Title..." />
-      <textarea id="thread-content" placeholder="Write your first post..."></textarea>
-      <div class="file-input-wrapper">
-        <input type="file" id="thread-image-input" accept="image/*" />
-        <label for="thread-image-input"><i class="fas fa-image"></i> Add image</label>
-        <img id="thread-image-preview" class="preview" alt="preview" />
-      </div>
-      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0;">
-        <label style="display: flex; align-items: center; gap: 0.3rem; color: #aaa;">
-          <input type="checkbox" id="thread-blur" /> Blur image
-        </label>
-        <input type="text" id="thread-password" placeholder="Password lock (optional)" style="flex:1; min-width:120px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
-        <input type="number" id="thread-age" placeholder="Min age (0=none)" style="width:100px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
-      </div>
-      <div class="row" style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;">
-        <input type="text" id="author-name" placeholder="Your name (optional)" style="flex:2; min-width:120px;" />
-        <button class="btn-primary" id="create-thread-btn"><i class="fas fa-paper-plane"></i> Post</button>
-        <span id="thread-status" class="status-msg" style="display:none;"></span>
-      </div>
-    </div>
-
-    <div id="threads-container"></div>
-  </div>
-
-  <!-- ===== SUBSCRIBE MODAL ===== -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal-content" id="modalContent">
-      <button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">
-        <i class="fas fa-times"></i>
-      </button>
-      <div class="card-header">
-        <h1>⚡ All Payment Methods</h1>
-        <p>Choose your preferred way — fast, secure, and private.</p>
-      </div>
-      <div class="grid-2col">
-        <div class="embedded-wrapper">
-          <span class="label">PayPal</span>
-          <div id="paypal-button-container-quick"></div>
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="logo"><i class="fas fa-globe-americas"></i> World</div>
+        <div class="visitor-badge" id="visitorBadge">
+          <i class="fas fa-user"></i>
+          <span id="visitorCount">0</span>
         </div>
-        <div class="embedded-wrapper">
-          <span class="label">Stripe</span>
-          <stripe-buy-button buy-button-id="buy_btn_1TqoW5LSIB6IjFRXK9UsvpAT" publishable-key="pk_live_51TKTF4LSIB6IjFRX3lKiYl3vVLCiphsZluzPsi9Zzz4Dxs1AxXqn2tQXwpXlKuzP2ePkXIn45BoqkVRsSVhSczkk00EhKZvS83"></stripe-buy-button>
+        <div class="auth-badge" id="auth-status"><i class="fas fa-user-secret"></i> Anonymous</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-item"><span class="num" id="stat-threads">0</span><span class="label">Threads</span></div>
+        <div class="stat-item"><span class="num" id="stat-replies">0</span><span class="label">Replies</span></div>
+        <div class="stat-item"><span class="num" id="stat-online">0</span><span class="label">Online</span></div>
+        <div class="stat-item"><span class="num" id="stat-total">0</span><span class="label">Total Visits</span></div>
+      </div>
+
+      <!-- Create Thread -->
+      <div class="create-thread">
+        <h3><i class="fas fa-pen-fancy" style="color:#2dd4bf;"></i> New thread</h3>
+        <input type="text" id="thread-title" placeholder="Title..." />
+        <textarea id="thread-content" placeholder="Write your first post..."></textarea>
+        <div class="file-input-wrapper">
+          <input type="file" id="thread-image-input" accept="image/*" />
+          <label for="thread-image-input"><i class="fas fa-image"></i> Add image</label>
+          <img id="thread-image-preview" class="preview" alt="preview" />
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0;">
+          <label style="display: flex; align-items: center; gap: 0.3rem; color: #aaa;">
+            <input type="checkbox" id="thread-blur" /> Blur image
+          </label>
+          <input type="text" id="thread-password" placeholder="Password lock (optional)" style="flex:1; min-width:120px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
+          <input type="number" id="thread-age" placeholder="Min age (0=none)" style="width:100px; background:#0f1426; border:1px solid #2a2f4b; border-radius:12px; color:#e4e6eb; padding:0.6rem 0.9rem;" />
+        </div>
+        <div class="row" style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;">
+          <input type="text" id="author-name" placeholder="Your name (optional)" style="flex:2; min-width:120px;" />
+          <button class="btn-primary" id="create-thread-btn"><i class="fas fa-paper-plane"></i> Post</button>
+          <span id="thread-status" class="status-msg" style="display:none;"></span>
         </div>
       </div>
-      <div class="flex-row" style="margin-top: 0.75rem;">
-        <button class="btn btn-venmo" id="venmoQuickBtn" type="button" style="flex:1;"><i class="fab fa-venmo"></i> Venmo</button>
-        <button class="btn btn-crypto" id="cryptoPayBtn" type="button" style="flex:1;"><i class="fab fa-bitcoin"></i> Crypto</button>
-      </div>
-      <div class="divider"></div>
-      <button class="crypto-toggle" id="cryptoToggle" type="button">
-        <span>🔑 Reveal Crypto &amp; Secure Options</span>
-        <span class="arrow">▾</span>
-      </button>
-      <div class="crypto-content" id="cryptoContent">
-        <div class="crypto-grid">
-          <div class="crypto-box">
-            <span class="title">⚡ Crypto Widget</span>
-            <div class="iframe-wrap">
-              <iframe src="https://nowpayments.io/embeds/payment-widget?iid=5412862639" width="410" height="696" frameborder="0" scrolling="no" style="overflow-y: hidden; width:100%; height:480px; border:0;" loading="lazy"></iframe>
-            </div>
-            <button class="btn btn-crypto" id="directPaymentBtn" type="button" style="width:100%;"><i class="fas fa-external-link-alt"></i> Open payment page</button>
-          </div>
-          <div class="crypto-box">
-            <span class="title">₿ Bitcoin Address</span>
-            <div class="address-copy">
-              <span style="color:#777;font-size:11px;">📬</span>
-              <input type="text" value="bc1qwflupf704dhvwfk8msrzgz7f8x5vmp7hdetm0y" id="btcAddress" readonly>
-              <button class="copy-btn" id="copyBtn" type="button">📋 Copy</button>
-            </div>
-            <div class="disclosure-text">
-              <strong>⚠️ FIAT TERMINATED / POLICY DISCLOSURE</strong>
-              <p style="margin-top:4px;"><strong>EN:</strong> All traditional gateways are blacklisted due to chargeback abuse. Bitcoin transactions are irreversible. No refunds.</p>
-              <p style="margin-top:4px;"><strong>PT:</strong> Gateways tradicionais banidos devido a fraudes. Transações Bitcoin imutáveis. Reembolso zero.</p>
-              <p style="margin-top:4px;"><strong>ZH:</strong> 因恶意申诉欺诈，传统支付已禁用。比特币交易不可篡改，概不退款。</p>
-            </div>
-            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
-              <button class="btn btn-telegram" id="telegramBtn" type="button" style="flex:1;"><i class="fab fa-telegram"></i> Telegram</button>
-              <button class="btn btn-safew" id="safewBtn" type="button" style="flex:1;"><i class="fas fa-shield-alt"></i> Safew</button>
-            </div>
-            <p style="font-size:0.7rem; color:#555; text-align:center; margin-top:0.5rem;">After paying, message us on Telegram or Safew with your TXID.</p>
-          </div>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="dropdown-wrapper">
-        <div class="sub">💳 Traditional Payment Methods (vetted members only · reference)</div>
-        <div class="dropdown" id="dropdownContainer">
-          <button id="dropdownBtn" type="button">
-            <span class="btn-content"><span class="icon">💳</span><span class="label" id="selectedLabel">Select payment</span></span>
-            <span class="arrow">▾</span>
-          </button>
-          <div id="dropdownMenu"></div>
-        </div>
-      </div>
-      <div class="footnote">
-        <strong>Final Policy:</strong> All Bitcoin payments are final. Legacy platforms are permanently locked for new accounts.
-        <span style="display:block; margin-top:6px;">📩 For support: <a href="https://t.me/Superhelpful" target="_blank">@superhelpful</a></span>
-      </div>
+
+      <!-- Threads Feed -->
+      <div id="threads-container"></div>
     </div>
   </div>
 
   <script>
+    // ============================================================
+    // RESTORE SCROLL AFTER INTRO
+    // ============================================================
+    setTimeout(() => { document.body.style.overflow = "auto"; }, 3300);
+
     // ============================================================
     // SUPABASE SETUP
     // ============================================================
@@ -721,15 +471,62 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ============================================================
-    // SPLASH SCREEN CONTROL
+    // SESSION ID
     // ============================================================
-    function hideSplash() {
-      const splash = document.getElementById('splash-screen');
-      if (!splash) return;
-      splash.classList.add('hidden');
-      setTimeout(() => {
-        if (splash.parentNode) splash.remove();
-      }, 800);
+    function getSessionId() {
+      let id = localStorage.getItem('forum_session_id');
+      if (!id) {
+        id = crypto.randomUUID ? crypto.randomUUID() : 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        localStorage.setItem('forum_session_id', id);
+      }
+      return id;
+    }
+
+    // ============================================================
+    // VISITOR TRACKING
+    // ============================================================
+    async function updateActiveSession() {
+      const sessionId = getSessionId();
+      const { error } = await supabaseClient
+        .from('active_sessions')
+        .upsert({ session_id: sessionId, last_active: new Date().toISOString() }, { onConflict: 'session_id' });
+      if (error) console.error('Active session error:', error);
+    }
+
+    async function updateStats() {
+      if (!sessionStorage.getItem('visit_counted')) {
+        const { data, error } = await supabaseClient.rpc('increment_total_visits');
+        if (!error && data) {
+          document.getElementById('stat-total').textContent = data;
+          document.getElementById('visitorCount').textContent = data;
+        }
+        sessionStorage.setItem('visit_counted', 'true');
+      } else {
+        const { data, error } = await supabaseClient.from('site_stats').select('total_visits').eq('id', 1).single();
+        if (!error && data) {
+          document.getElementById('stat-total').textContent = data.total_visits;
+          document.getElementById('visitorCount').textContent = data.total_visits;
+        }
+      }
+
+      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+      const { count, error: countError } = await supabaseClient
+        .from('active_sessions')
+        .select('*', { count: 'exact', head: true })
+        .gt('last_active', thirtySecondsAgo);
+
+      if (!countError) {
+        document.getElementById('stat-online').textContent = count || 0;
+      }
+    }
+
+    let heartbeatInterval = null;
+    function startHeartbeat() {
+      updateActiveSession();
+      heartbeatInterval = setInterval(() => {
+        updateActiveSession();
+        updateStats();
+      }, 15000);
     }
 
     // ============================================================
@@ -815,6 +612,30 @@
     }
 
     // ============================================================
+    // DELETE FUNCTIONS
+    // ============================================================
+    window.deleteThread = async function(threadId) {
+      if (!confirm('Delete this thread and all replies? This cannot be undone.')) return;
+      try {
+        const { error } = await supabaseClient.from('threads').delete().eq('id', threadId);
+        if (error) { alert('❌ Error: ' + error.message); return; }
+        alert('✅ Thread deleted.');
+        loadThreads();
+      } catch (e) { alert('❌ Error: ' + e.message); }
+    };
+
+    window.deleteReply = async function(threadId, postId) {
+      if (!confirm('Delete this reply? This cannot be undone.')) return;
+      try {
+        const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
+        if (error) { alert('❌ Error: ' + error.message); return; }
+        alert('✅ Reply deleted.');
+        await viewThread(threadId);
+        loadThreads();
+      } catch (e) { alert('❌ Error: ' + e.message); }
+    };
+
+    // ============================================================
     // LOAD THREADS
     // ============================================================
     async function loadThreads() {
@@ -842,6 +663,8 @@
       }
 
       const userName = getUserName();
+      const sessionId = getSessionId();
+
       let html = '';
       for (const t of threads) {
         const { count: likeCount } = await supabaseClient.from('likes').select('*', { count: 'exact', head: true }).eq('thread_id', t.id);
@@ -854,10 +677,11 @@
         const rawAuthor = t.author_name || '';
         const userInfo = getUserDisplay(rawAuthor);
         const displayName = userInfo.displayName;
-        const roleClass = userInfo.role === 'admin' ? 'admin-post' :
-                          userInfo.role === 'mod' ? 'mod-post' :
-                          userInfo.role === 'unverified' ? 'unverified-post' : '';
+        const roleClass = userInfo.role === 'admin' ? 'admin-post' : userInfo.role === 'mod' ? 'mod-post' : userInfo.role === 'unverified' ? 'unverified-post' : '';
         const badgeHtml = userInfo.badge;
+
+        const isMyPost = t.session_id === sessionId;
+        const myPostClass = isMyPost ? 'my-post' : '';
 
         let imageHtml = '';
         if (t.image_url) {
@@ -880,9 +704,7 @@
                 <span id="pwd-error-${t.id}" style="color:#f43f5e; display:block;"></span>
               </div>
             `;
-          } else {
-            passwordVerified = true;
-          }
+          } else { passwordVerified = true; }
         }
 
         let ageHtml = '';
@@ -898,39 +720,43 @@
                 <span id="age-error-${t.id}" style="color:#f43f5e; display:block;"></span>
               </div>
             `;
-          } else {
-            ageVerified = true;
-          }
+          } else { ageVerified = true; }
         }
 
         const showContent = (!t.password_hash || passwordVerified) && (!t.age_required || t.age_required === 0 || ageVerified);
 
+        const lockIcon = t.password_hash ? `<i class="fas fa-lock lock-icon" title="Password protected"></i>` : '';
+        const ageIcon = t.age_required && t.age_required > 0 ? `<i class="fas fa-shield-alt age-icon" title="Age ${t.age_required}+"></i>` : '';
+
+        // Admin actions – Follow button removed
         let adminActions = '';
         if (userInfo.role === 'admin') {
           adminActions = `
             <div class="admin-actions">
-              <button class="btn-admin follow" onclick="handleFollow()"><i class="fas fa-user-plus"></i> Follow</button>
-              <button class="btn-admin subscribe" onclick="openSubscribeModal()"><i class="fas fa-crown"></i> Subscribe</button>
+              <!-- Follow button removed -->
             </div>
           `;
         }
 
-        const lockIcon = t.password_hash ? `<i class="fas fa-lock lock-icon" title="Password protected"></i>` : '';
-        const ageIcon = t.age_required && t.age_required > 0 ? `<i class="fas fa-shield-alt age-icon" title="Age ${t.age_required}+"></i>` : '';
+        // Delete button (only for own posts)
+        const deleteBtn = isMyPost ? `
+          <div class="delete-wrap">
+            <button class="delete-btn" onclick="deleteThread('${t.id}')"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        ` : '';
 
         html += `
-          <div class="thread-card ${roleClass}" data-thread-id="${t.id}">
+          <div class="thread-card ${roleClass} ${myPostClass}" data-thread-id="${t.id}">
             <div class="author">
               <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
               <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
+              ${isMyPost ? `<span style="font-size:0.6rem; color:#38bdf8; background:#1e2648; padding:0.1rem 0.5rem; border-radius:10px;">You</span>` : ''}
               <span class="time">${new Date(t.created_at).toLocaleString()}</span>
               ${lockIcon} ${ageIcon}
+              ${deleteBtn}
             </div>
             <h2>${safeTitle}</h2>
-            ${showContent ? `
-              <div class="content">${safeContent}</div>
-              ${imageHtml}
-            ` : `
+            ${showContent ? `<div class="content">${safeContent}</div>${imageHtml}` : `
               <div class="content" style="opacity:0.3; filter: blur(4px); pointer-events:none;">${safeContent.substring(0, 100)}...</div>
               ${t.image_url ? `<div style="filter: blur(20px);">${imageHtml}</div>` : ''}
             `}
@@ -972,7 +798,6 @@
       const errorSpan = document.getElementById(`pwd-error-${threadId}`);
       const entered = input.value;
       if (!entered) { errorSpan.textContent = 'Enter a password.'; return; }
-
       const { data, error } = await supabaseClient.from('threads').select('password_hash').eq('id', threadId).single();
       if (error) { errorSpan.textContent = 'Error fetching password.'; return; }
       const enteredHash = await sha256(entered);
@@ -1003,7 +828,6 @@
       const userName = getUserName();
       const likeToggle = document.querySelector(`.like-toggle[data-thread="${threadId}"]`);
       if (!likeToggle) return;
-
       const { data: existing } = await supabaseClient.from('likes').select('*').eq('thread_id', parseInt(threadId)).eq('user_name', userName);
       if (existing && existing.length > 0) {
         const { error } = await supabaseClient.from('likes').delete().eq('thread_id', parseInt(threadId)).eq('user_name', userName);
@@ -1023,7 +847,6 @@
     window.viewThread = async function(threadId) {
       const container = document.getElementById(`replies-${threadId}`);
       if (!container) return;
-
       if (container.classList.contains('hidden')) {
         container.classList.remove('hidden');
         const { data: posts, error } = await supabaseClient.from('posts').select('*').eq('thread_id', threadId).order('created_at', { ascending: true });
@@ -1032,6 +855,7 @@
           return;
         }
 
+        const sessionId = getSessionId();
         let html = '';
         if (!posts || posts.length === 0) {
           html = '<p class="text-muted">No replies yet. Be the first!</p>';
@@ -1040,17 +864,24 @@
             const rawAuthor = p.author_name || '';
             const userInfo = getUserDisplay(rawAuthor);
             const displayName = userInfo.displayName;
-            const roleClass = userInfo.role === 'admin' ? 'admin-post' :
-                              userInfo.role === 'mod' ? 'mod-post' :
-                              userInfo.role === 'unverified' ? 'unverified-post' : '';
+            const roleClass = userInfo.role === 'admin' ? 'admin-post' : userInfo.role === 'mod' ? 'mod-post' : userInfo.role === 'unverified' ? 'unverified-post' : '';
             const badgeHtml = userInfo.badge;
             const safeContent = sanitizeInput(p.content);
+            const isMyPost = p.session_id === sessionId;
+            const myPostClass = isMyPost ? 'my-post' : '';
+            const deleteBtn = isMyPost ? `
+              <div class="delete-wrap">
+                <button class="delete-btn" onclick="deleteReply('${threadId}', '${p.id}')"><i class="fas fa-trash"></i></button>
+              </div>
+            ` : '';
             return `
-              <div class="reply-item ${roleClass}">
+              <div class="reply-item ${roleClass} ${myPostClass}">
                 <div class="author">
                   <img src="${getAvatar(displayName === 'Unverified' ? '' : displayName)}" alt="" />
                   <span class="name">${sanitizeInput(displayName)} ${badgeHtml}</span>
+                  ${isMyPost ? `<span style="font-size:0.55rem; color:#38bdf8; background:#1e2648; padding:0.05rem 0.4rem; border-radius:8px;">You</span>` : ''}
                   <span class="time">${new Date(p.created_at).toLocaleString()}</span>
+                  ${deleteBtn}
                 </div>
                 <div class="content">${safeContent}</div>
                 ${p.image_url ? `<img src="${p.image_url}" class="reply-image" />` : ''}
@@ -1095,6 +926,7 @@
 
       const author = rawAuthor;
       const content = sanitizeInput(rawContent);
+      const sessionId = getSessionId();
 
       btn.disabled = true;
       setStatus(statusEl, 'Sending...', 'sending');
@@ -1114,7 +946,8 @@
         thread_id: parseInt(threadId),
         author_name: author,
         content: content,
-        image_url: imageUrl
+        image_url: imageUrl,
+        session_id: sessionId
       }]);
 
       if (error) {
@@ -1163,10 +996,9 @@
       const blurred = blurCheck.checked;
       let password_hash = null;
       const password = passwordInput.value.trim();
-      if (password) {
-        password_hash = await sha256(password);
-      }
+      if (password) { password_hash = await sha256(password); }
       const age_required = parseInt(ageInput.value) || 0;
+      const sessionId = getSessionId();
 
       this.disabled = true;
       setStatus(statusEl, 'Sending...', 'sending');
@@ -1189,7 +1021,8 @@
         image_url: imageUrl,
         blurred: blurred,
         password_hash: password_hash,
-        age_required: age_required
+        age_required: age_required,
+        session_id: sessionId
       }]);
 
       if (error) {
@@ -1237,188 +1070,6 @@
     });
 
     // ============================================================
-    // ADMIN ACTIONS
-    // ============================================================
-    window.handleFollow = function() {
-      alert('Follow functionality coming soon!');
-    };
-
-    window.openSubscribeModal = function() {
-      document.getElementById('modalOverlay').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    };
-
-    // ============================================================
-    // MODAL CONTROLS
-    // ============================================================
-    document.getElementById('modalCloseBtn').addEventListener('click', function() {
-      document.getElementById('modalOverlay').classList.remove('open');
-      document.body.style.overflow = '';
-    });
-    document.getElementById('modalOverlay').addEventListener('click', function(e) {
-      if (e.target === this) {
-        document.getElementById('modalOverlay').classList.remove('open');
-        document.body.style.overflow = '';
-      }
-    });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        document.getElementById('modalOverlay').classList.remove('open');
-        document.body.style.overflow = '';
-      }
-    });
-
-    // ============================================================
-    // PAYMENT MODAL SCRIPTS
-    // ============================================================
-    let paypalRendered = false;
-    function renderPayPal() {
-      const container = document.getElementById('paypal-button-container-quick');
-      if (!container || typeof paypal === 'undefined' || paypalRendered) return;
-      paypal.Buttons({
-        createOrder: function(data, actions) {
-          return actions.order.create({ purchase_units: [{ amount: { value: '10.00' } }] });
-        },
-        onApprove: function(data, actions) {
-          return actions.order.capture().then(function(details) {
-            alert('✅ PayPal completed by ' + details.payer.name.given_name);
-          });
-        },
-        onError: function(err) { alert('❌ PayPal error: ' + err.message); },
-        onCancel: function() { alert('⏹️ PayPal cancelled.'); }
-      }).render(container);
-      paypalRendered = true;
-    }
-
-    document.getElementById('venmoQuickBtn')?.addEventListener('click', function() {
-      window.open('https://account.venmo.com/u/Viraldancando', '_blank');
-    });
-    document.getElementById('cryptoPayBtn')?.addEventListener('click', function() {
-      window.open('https://nowpayments.io/payment/?iid=5412862639&source=button', '_blank');
-    });
-    document.getElementById('directPaymentBtn')?.addEventListener('click', function() {
-      window.open('https://nowpayments.io/payment/?iid=5412862639', '_blank');
-    });
-
-    const toggleBtn = document.getElementById('cryptoToggle');
-    const content = document.getElementById('cryptoContent');
-    toggleBtn?.addEventListener('click', function() {
-      const isOpen = content.classList.toggle('open');
-      toggleBtn.classList.toggle('open');
-      toggleBtn.querySelector('span:last-child').textContent = isOpen ? '▴' : '▾';
-    });
-
-    function copyAddress() {
-      var addrInput = document.getElementById('btcAddress');
-      addrInput.select();
-      addrInput.setSelectionRange(0, 99999);
-      navigator.clipboard.writeText(addrInput.value).then(() => {
-        var btn = document.getElementById('copyBtn');
-        var original = btn.innerText;
-        btn.innerText = '✅ Copied!';
-        setTimeout(() => { btn.innerText = original; }, 2000);
-      }).catch(() => {
-        document.execCommand('copy');
-        var btn = document.getElementById('copyBtn');
-        var original = btn.innerText;
-        btn.innerText = '✅ Copied!';
-        setTimeout(() => { btn.innerText = original; }, 2000);
-      });
-    }
-    document.getElementById('copyBtn')?.addEventListener('click', copyAddress);
-
-    document.getElementById('telegramBtn')?.addEventListener('click', function() {
-      window.open('https://t.me/Superhelpful', '_blank');
-    });
-    document.getElementById('safewBtn')?.addEventListener('click', function() {
-      window.open('https://sfw.vc/superhelpful', '_blank');
-    });
-
-    const processors = [
-      { name: 'PayPal', icon: '🅿️', bg: '#003087' },
-      { name: 'Stripe', icon: '⚡', bg: '#635bff' },
-      { name: 'Square', icon: '▣', bg: '#00693e' },
-      { name: 'Visa', icon: '💳', bg: '#1a1f71' },
-      { name: 'Mastercard', icon: '💳', bg: '#eb001b' },
-      { name: 'Amex', icon: '💳', bg: '#006fcf' },
-      { name: 'Discover', icon: '💳', bg: '#ff6000' },
-      { name: 'Apple Pay', icon: '⌘', bg: '#000000' },
-      { name: 'Google Pay', icon: '▶', bg: '#4285f4' },
-      { name: 'Amazon Pay', icon: '🛒', bg: '#ff9900' },
-      { name: 'Venmo', icon: '💙', bg: '#3d95ce' },
-      { name: 'Cash App', icon: '💰', bg: '#00d632' },
-      { name: 'Klarna', icon: '🌸', bg: '#ffb3c7' },
-      { name: 'Afterpay', icon: '✨', bg: '#b2fce4' },
-      { name: 'Affirm', icon: '✓', bg: '#4a4af4' },
-      { name: 'Braintree', icon: '🌳', bg: '#0b3b5c' },
-      { name: 'Adyen', icon: '🔷', bg: '#0abf53' },
-      { name: 'Worldpay', icon: '🌐', bg: '#f47920' },
-      { name: '2Checkout', icon: '✔️', bg: '#1c3c6b' },
-      { name: 'PayU', icon: '💸', bg: '#0033a0' },
-      { name: 'Skrill', icon: '💧', bg: '#1d2b5b' },
-      { name: 'Neteller', icon: '💛', bg: '#f5b800' },
-      { name: 'Paysafe', icon: '🔒', bg: '#0066b3' },
-      { name: 'Alipay', icon: '🟦', bg: '#1677ff' },
-      { name: 'WeChat Pay', icon: '💚', bg: '#07c160' },
-      { name: 'G Pay', icon: '🟢', bg: '#1a73e8' },
-      { name: 'Samsung Pay', icon: '📱', bg: '#1428a0' },
-      { name: 'Bancontact', icon: '🇧🇪', bg: '#0053a4' },
-      { name: 'iDEAL', icon: '🇳🇱', bg: '#cc0033' },
-      { name: 'Giropay', icon: '🇩🇪', bg: '#ffcc00' },
-      { name: 'Przelewy24', icon: '🇵🇱', bg: '#e6007e' },
-      { name: 'Crypto.com', icon: '₿', bg: '#0b1426' },
-      { name: 'BitPay', icon: '₿', bg: '#1a2a3a' }
-    ];
-
-    const containerDropdown = document.getElementById('dropdownContainer');
-    const btnDropdown = document.getElementById('dropdownBtn');
-    const selectedLabel = document.getElementById('selectedLabel');
-    const menu = document.getElementById('dropdownMenu');
-
-    processors.forEach(p => {
-      const item = document.createElement('button');
-      item.className = 'dropdown-item';
-      item.style.backgroundColor = p.bg;
-      item.style.color = '#fff';
-      if (p.bg === '#ffb3c7' || p.bg === '#b2fce4' || p.bg === '#f5b800' || p.bg === '#ffcc00' || p.bg === '#ff9900' || p.bg === '#00d632') {
-        item.style.color = '#1a1a1a';
-        item.style.border = '1px solid rgba(255,255,255,0.08)';
-      }
-      item.innerHTML = `<span class="icon">${p.icon}</span><span class="name">${p.name}</span>`;
-
-      item.addEventListener('click', (e) => {
-        e.stopPropagation();
-        btnDropdown.style.backgroundColor = p.bg;
-        btnDropdown.style.color = (p.bg === '#ffb3c7' || p.bg === '#b2fce4' || p.bg === '#f5b800' || p.bg === '#ffcc00' || p.bg === '#ff9900' || p.bg === '#00d632') ? '#1a1a1a' : '#fff';
-        const iconSpan = btnDropdown.querySelector('.btn-content .icon');
-        iconSpan.textContent = p.icon;
-        selectedLabel.textContent = p.name;
-        containerDropdown.classList.remove('open');
-      });
-      menu.appendChild(item);
-    });
-
-    btnDropdown.addEventListener('click', (e) => {
-      e.stopPropagation();
-      containerDropdown.classList.toggle('open');
-    });
-    document.addEventListener('click', () => {
-      containerDropdown.classList.remove('open');
-    });
-    menu.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') containerDropdown.classList.remove('open');
-    });
-
-    document.getElementById('modalOverlay').addEventListener('transitionend', function(e) {
-      if (e.target === this && this.classList.contains('open')) {
-        renderPayPal();
-      }
-    });
-
-    // ============================================================
     // AUTH
     // ============================================================
     async function checkAuth() {
@@ -1429,32 +1080,20 @@
     }
 
     // ============================================================
-    // INIT – GUARANTEED SPLASH SCREEN VISIBILITY
+    // INIT
     // ============================================================
     async function init() {
-      const startTime = Date.now();
-      
       try {
         await loadThreads();
         await checkAuth();
+        await updateStats();
+        startHeartbeat();
       } catch (e) {
         console.error('Init error:', e);
-      } finally {
-        // Calculate how long loading took
-        const elapsedTime = Date.now() - startTime;
-        const minDisplayTime = 600; // Guarantee splash is visible for at least 600ms to prevent flicker
-        
-        // If it loaded super fast, wait the remainder of the 600ms. If it took longer, hide immediately.
-        const delay = Math.max(0, minDisplayTime - elapsedTime);
-        
-        setTimeout(() => {
-          hideSplash();
-        }, delay);
       }
     }
 
-    // Defer init by 50ms to guarantee the browser has painted the splash screen first
-    setTimeout(init, 50);
+    setTimeout(init, 100);
   </script>
 </body>
 </html>
