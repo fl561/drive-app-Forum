@@ -6,7 +6,6 @@
   <title>FedPromptly Delivery</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* (same styles – no change) */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -25,6 +24,7 @@
       border-radius: 24px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       padding: 24px;
+      position: relative;
     }
     h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 8px; color: #0a0a0a; }
     .sub { color: #666; margin-bottom: 24px; font-size: 0.95rem; }
@@ -41,14 +41,6 @@
       border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.15s;
     }
     .btn:hover { background: #1d4ed8; }
-    .btn-google {
-      background: #fff; color: #1e1e1e; border: 1px solid #d0d5dd;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-google:hover { background: #f8fafc; }
-    .btn-google img { width: 20px; height: 20px; }
-    .divider { display: flex; align-items: center; margin: 16px 0; gap: 12px; color: #999; font-size: 0.85rem; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
     .btn-secondary { background: transparent; color: #2563eb; border: 1px solid #d0d5dd; }
     .btn-secondary:hover { background: #f8fafc; }
     .toggle-link { text-align: center; margin-top: 16px; color: #2563eb; font-weight: 500; cursor: pointer; }
@@ -98,9 +90,68 @@
     .error { color: #dc2626; background: #fef2f2; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
     .success { color: #16a34a; background: #f0fdf4; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
     .empty-state { text-align: center; color: #888; padding: 40px 0; font-size: 0.95rem; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .modal {
+      background: white;
+      max-width: 400px;
+      width: 90%;
+      padding: 24px;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+    .modal h3 { font-size: 1.3rem; margin-bottom: 8px; }
+    .modal p { color: #444; margin-bottom: 16px; line-height: 1.5; }
+    .modal .btn-group { display: flex; gap: 10px; margin-top: 12px; }
+    .modal .btn-group .btn { flex: 1; }
+    .modal .btn-close { background: transparent; color: #666; border: 1px solid #d0d5dd; }
+    .modal .btn-close:hover { background: #f3f4f6; }
+    .modal input { margin-bottom: 12px; }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      transition: opacity 0.2s ease;
+    }
+    .loading-overlay .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .loading-overlay p {
+      color: white;
+      margin-top: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <p>Loading…</p>
+</div>
 
 <div class="container" id="app">
 
@@ -121,14 +172,6 @@
         <input type="password" id="login-password" placeholder="••••••••" />
       </div>
       <button class="btn" id="login-btn">Log in</button>
-
-      <div class="divider">or</div>
-
-      <button class="btn btn-google" id="google-login-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="#fbc02d" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#e53935" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4caf50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1565c0" d="M43.611,20.083L43.595,20L24,20v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-        Sign in with Google
-      </button>
-
       <div class="toggle-link" id="show-signup">Don't have an account? Sign up</div>
     </div>
 
@@ -187,13 +230,28 @@
   </div>
 </div>
 
+<!-- Phone number modal -->
+<div id="phone-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>📱 Phone Number Required</h3>
+    <p>Please provide your phone number for delivery updates, or text <strong>954-871-0397</strong> for assistance.</p>
+    <div class="form-group">
+      <label for="modal-phone">Your phone number</label>
+      <input type="text" id="modal-phone" placeholder="(305) 555-1234" />
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="modal-save-phone">Save</button>
+      <button class="btn btn-close" id="modal-close">Skip</button>
+    </div>
+    <div id="modal-error" class="error" style="margin-top:10px;"></div>
+  </div>
+</div>
+
 <script>
-  // Wait for DOM to be ready
   document.addEventListener('DOMContentLoaded', function() {
 
     console.log('DOM loaded – initializing FedPromptly');
 
-    // Check Supabase client
     if (typeof window.supabase === 'undefined') {
       alert('Supabase client failed to load. Check your internet connection or CDN.');
       console.error('Supabase client not found!');
@@ -206,7 +264,11 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('Supabase client initialized');
 
+    // ---------- ADMIN EMAIL ----------
+    const ADMIN_EMAIL = 'hungbbcllc@gmail.com';
+
     const $ = (id) => document.getElementById(id);
+    const loadingOverlay = $('loading-overlay');
     const authSection = $('auth-section');
     const dashSection = $('dashboard-section');
     const loginForm = $('login-form');
@@ -227,11 +289,25 @@
     const authSuccess = $('auth-success');
     const dashError = $('dash-error');
     const dashSuccess = $('dash-success');
-    const googleLoginBtn = $('google-login-btn');
+
+    const phoneModal = $('phone-modal');
+    const modalPhone = $('modal-phone');
+    const modalSave = $('modal-save-phone');
+    const modalClose = $('modal-close');
+    const modalError = $('modal-error');
 
     let currentUser = null;
     let currentCustomerId = null;
     let allCustomers = [];
+    let lastReminderTimestamp = 0;
+
+    // ---------- Loading overlay ----------
+    function showLoading() {
+      loadingOverlay.classList.remove('hidden');
+    }
+    function hideLoading() {
+      loadingOverlay.classList.add('hidden');
+    }
 
     function showError(el, msg) {
       el.style.display = 'block';
@@ -254,6 +330,17 @@
       hideError(authSuccess);
     }
 
+    // ---------- System message ----------
+    async function sendSystemMessage(customerId, content) {
+      if (!customerId) return;
+      const { error } = await supabase
+        .from('messages')
+        .insert([{ customer_id: customerId, content, is_from_admin: true }]);
+      if (error) console.error('Failed to send system message:', error);
+      await loadMessages();
+    }
+
+    // ---------- Auth handlers ----------
     async function handleSignUp() {
       console.log('SignUp clicked');
       const email = $('signup-email').value.trim();
@@ -266,51 +353,65 @@
       }
       hideError(authError);
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        console.error('SignUp error:', error);
-        return showError(authError, error.message);
+      showLoading();
+      try {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          console.error('SignUp error:', error);
+          showError(authError, error.message);
+          hideLoading();
+          return;
+        }
+
+        // Determine role: if email matches admin email, set as admin
+        const role = (email === ADMIN_EMAIL) ? 'admin' : 'customer';
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: data.user.id, email, full_name, phone, role }]);
+
+        if (profileError) {
+          console.error('Profile insert error:', profileError);
+          showError(authError, 'Account created but profile failed. Please contact support.');
+          hideLoading();
+          return;
+        }
+
+        showSuccess(authSuccess, 'Account created! Please log in.');
+        setAuthView(true);
+        $('login-email').value = email;
+        $('login-password').value = '';
+        hideLoading();
+      } catch (err) {
+        console.error(err);
+        showError(authError, 'Something went wrong. Please try again.');
+        hideLoading();
       }
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ id: data.user.id, email, full_name, phone, role: 'customer' }]);
-
-      if (profileError) {
-        console.error('Profile insert error:', profileError);
-        showError(authError, 'Account created but profile failed. Please contact support.');
-        return;
-      }
-
-      showSuccess(authSuccess, 'Account created! Please log in.');
-      setAuthView(true);
-      $('login-email').value = email;
-      $('login-password').value = '';
     }
 
     async function handleLogin() {
       console.log('Login clicked');
       const email = $('login-email').value.trim();
       const password = $('login-password').value;
-      if (!email || !password) return showError(authError, 'Enter email and password.');
+      if (!email || !password) {
+        showError(authError, 'Enter email and password.');
+        return;
+      }
       hideError(authError);
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Login error:', error);
-        return showError(authError, error.message);
-      }
-    }
-
-    async function handleGoogleLogin() {
-      console.log('Google Login clicked');
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-      });
-      if (error) {
-        console.error('Google OAuth error:', error);
-        showError(authError, error.message);
+      showLoading();
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          console.error('Login error:', error);
+          showError(authError, error.message);
+          hideLoading();
+        }
+        // On success, auth state change will handle dashboard and hide loading
+      } catch (err) {
+        console.error(err);
+        showError(authError, 'Something went wrong. Please try again.');
+        hideLoading();
       }
     }
 
@@ -348,7 +449,7 @@
     function renderMessages(messages, currentUserId, isAdmin, selectedCustomerId) {
       messageArea.innerHTML = '';
       if (!messages || messages.length === 0) {
-        messageArea.innerHTML = '<div class="empty-state">No messages to show.</div>';
+        messageArea.innerHTML = '<div class="empty-state">No messages yet.</div>';
         return;
       }
 
@@ -411,6 +512,7 @@
       renderMessages(data || [], currentUser.id, isAdmin, currentCustomerId);
     }
 
+    // ---------- Send message (with auto-reminder) ----------
     async function sendMessage() {
       console.log('Send message clicked');
       const content = msgInput.value.trim();
@@ -446,7 +548,21 @@
       }
       msgInput.value = '';
       hideError(dashError);
+
       await loadMessages();
+
+      // Reminder for customers without phone
+      if (!isAdmin && currentUser && !currentUser.phone) {
+        const now = Date.now();
+        if (now - lastReminderTimestamp > 300000) {
+          lastReminderTimestamp = now;
+          await sendSystemMessage(
+            customerId,
+            "Reminder: Please add your phone number for delivery updates. Text 954-871-0397 for assistance."
+          );
+        }
+      }
+
       if (isAdmin && !currentCustomerId) {
         await populateCustomerFilter();
       }
@@ -484,17 +600,53 @@
         .subscribe();
     }
 
+    // ---------- Phone Modal ----------
+    function showPhoneModal() {
+      phoneModal.classList.remove('hidden');
+      modalPhone.value = '';
+      hideError(modalError);
+    }
+
+    function hidePhoneModal() {
+      phoneModal.classList.add('hidden');
+    }
+
+    async function savePhoneNumber() {
+      const phone = modalPhone.value.trim();
+      if (!phone) {
+        return showError(modalError, 'Please enter a phone number.');
+      }
+      hideError(modalError);
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ phone })
+        .eq('id', currentUser.id);
+
+      if (error) {
+        console.error('Update phone error:', error);
+        return showError(modalError, 'Failed to save. Please try again.');
+      }
+
+      currentUser.phone = phone;
+      hidePhoneModal();
+      showSuccess(dashSuccess, 'Phone number saved!');
+      await loadMessages();
+    }
+
+    // ---------- Dashboard Init ----------
     async function initDashboard(user) {
       console.log('Initializing dashboard for user:', user.email);
       let profile = await loadProfile(user.id);
       if (!profile) {
         const full_name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
         const email = user.email;
+        const role = (email === ADMIN_EMAIL) ? 'admin' : 'customer';
         const { error: insertError } = await supabase
           .from('profiles')
-          .insert([{ id: user.id, email, full_name, role: 'customer' }]);
+          .insert([{ id: user.id, email, full_name, role }]);
         if (insertError) {
-          console.error('Failed to create profile for OAuth user', insertError);
+          console.error('Failed to create profile', insertError);
           await supabase.auth.signOut();
           return;
         }
@@ -502,6 +654,19 @@
         if (!profile) {
           await supabase.auth.signOut();
           return;
+        }
+      } else {
+        // If existing profile and email is admin but role not admin, update it
+        if (user.email === ADMIN_EMAIL && profile.role !== 'admin') {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', user.id);
+          if (updateError) {
+            console.error('Failed to update admin role:', updateError);
+          } else {
+            profile.role = 'admin';
+          }
         }
       }
 
@@ -518,13 +683,23 @@
         await populateCustomerFilter();
       } else {
         adminControls.classList.add('hidden');
+        // Customer: welcome message
+        await sendSystemMessage(
+          currentUser.id,
+          "Welcome to FedPromptly! Please add your phone number for delivery updates."
+        );
+        if (!currentUser.phone) {
+          showPhoneModal();
+        }
       }
 
       await loadMessages();
       subscribeToMessages();
+
+      hideLoading();
     }
 
-    // --- Auth state listener ---
+    // Auth state listener
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state change:', event);
       if (event === 'SIGNED_IN' && session) {
@@ -543,14 +718,15 @@
         $('signup-password').value = '';
         hideError(dashError);
         hideError(dashSuccess);
+        hidePhoneModal();
+        hideLoading();
       }
     });
 
-    // --- Attach event listeners (with console logs) ---
+    // Event listeners
     loginBtn.addEventListener('click', handleLogin);
     signupBtn.addEventListener('click', handleSignUp);
     logoutBtn.addEventListener('click', handleLogout);
-    googleLoginBtn.addEventListener('click', handleGoogleLogin);
 
     showSignup.addEventListener('click', function(e) {
       e.preventDefault();
@@ -584,10 +760,20 @@
       loadMessages();
     });
 
-    // Check for existing session
+    modalSave.addEventListener('click', savePhoneNumber);
+    modalClose.addEventListener('click', hidePhoneModal);
+    modalPhone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        savePhoneNumber();
+      }
+    });
+
+    // Check existing session
     (async function checkSession() {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
+        showLoading();
         await initDashboard(data.session.user);
       } else {
         setAuthView(true);
@@ -595,7 +781,7 @@
     })();
 
     console.log('✅ FedPromptly dashboard ready.');
-  }); // end DOMContentLoaded
+  });
 </script>
 </body>
 </html>
