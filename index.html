@@ -1,61 +1,601 @@
--- Drop existing policies/function to avoid errors
-drop policy if exists "Users can view their own profile" on profiles;
-drop policy if exists "Users can update their own profile" on profiles;
-drop policy if exists "Users can insert their own profile" on profiles;
-drop policy if exists "Users can view messages" on messages;
-drop policy if exists "Users can send messages" on messages;
-drop policy if exists "Admins can update messages" on messages;
-drop function if exists is_admin();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FedPromptly Delivery</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* (same styles – no change) */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+    }
+    .container {
+      max-width: 500px;
+      width: 100%;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+    h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 8px; color: #0a0a0a; }
+    .sub { color: #666; margin-bottom: 24px; font-size: 0.95rem; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; color: #1e1e1e; }
+    input, select, textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid #d0d5dd; border-radius: 12px;
+      font-size: 1rem; background: white; transition: 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    textarea { resize: vertical; min-height: 60px; }
+    .btn {
+      width: 100%; padding: 12px; background: #2563eb; color: white; border: none;
+      border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.15s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn-google {
+      background: #fff; color: #1e1e1e; border: 1px solid #d0d5dd;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-google:hover { background: #f8fafc; }
+    .btn-google img { width: 20px; height: 20px; }
+    .divider { display: flex; align-items: center; margin: 16px 0; gap: 12px; color: #999; font-size: 0.85rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+    .btn-secondary { background: transparent; color: #2563eb; border: 1px solid #d0d5dd; }
+    .btn-secondary:hover { background: #f8fafc; }
+    .toggle-link { text-align: center; margin-top: 16px; color: #2563eb; font-weight: 500; cursor: pointer; }
+    .toggle-link:hover { text-decoration: underline; }
+    .hidden { display: none !important; }
+    #auth-section, #dashboard-section { transition: opacity 0.2s; }
+    .dash-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+    }
+    .dash-header h2 { font-size: 1.3rem; font-weight: 600; }
+    .dash-header .role-badge {
+      background: #eef2ff; color: #2563eb; padding: 4px 12px;
+      border-radius: 40px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    }
+    .logout-btn {
+      background: none; border: 1px solid #e5e7eb; padding: 6px 14px;
+      border-radius: 40px; font-size: 0.85rem; cursor: pointer; color: #444;
+    }
+    .logout-btn:hover { background: #f3f4f6; }
+    .admin-controls {
+      background: #f8fafc; padding: 14px; border-radius: 16px;
+      margin-bottom: 16px; border: 1px solid #e9edf2;
+    }
+    .admin-controls label { font-size: 0.8rem; color: #444; }
+    .admin-controls select { margin-top: 4px; }
+    .message-area {
+      background: #fafbfc; border-radius: 16px; padding: 12px;
+      height: 340px; overflow-y: auto; border: 1px solid #edf0f5;
+      margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .msg {
+      padding: 10px 14px; border-radius: 18px; max-width: 85%;
+      word-break: break-word; font-size: 0.95rem; line-height: 1.4;
+      align-self: flex-start; background: white; border: 1px solid #e5e9f0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .msg.customer-msg { align-self: flex-end; background: #2563eb; color: white; border: none; }
+    .msg.admin-msg { background: #f1f5f9; border: 1px solid #dbe0e8; }
+    .msg .meta { font-size: 0.65rem; opacity: 0.6; margin-top: 4px; display: block; font-weight: 400; }
+    .msg.customer-msg .meta { color: rgba(255,255,255,0.7); }
+    .msg .customer-label { font-weight: 600; font-size: 0.75rem; display: block; margin-bottom: 2px; color: #1e293b; }
+    .msg.customer-msg .customer-label { color: rgba(255,255,255,0.85); }
+    .compose { display: flex; gap: 10px; align-items: flex-end; }
+    .compose textarea { flex: 1; min-height: 50px; padding: 10px 14px; }
+    .compose .btn { width: auto; padding: 10px 20px; height: 50px; white-space: nowrap; }
+    .error { color: #dc2626; background: #fef2f2; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
+    .success { color: #16a34a; background: #f0fdf4; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
+    .empty-state { text-align: center; color: #888; padding: 40px 0; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
 
-create extension if not exists "uuid-ossp";
+<div class="container" id="app">
 
-create table if not exists profiles (
-  id uuid references auth.users on delete cascade primary key,
-  email text unique not null,
-  full_name text not null,
-  phone text,
-  role text default 'customer' check (role in ('customer', 'admin')),
-  created_at timestamptz default now()
-);
+  <div id="auth-section">
+    <h1>🚚 FedPromptly</h1>
+    <div class="sub">Local delivery • South Florida</div>
 
-create table if not exists messages (
-  id bigint generated by default as identity primary key,
-  customer_id uuid references profiles(id) on delete cascade not null,
-  content text not null,
-  is_from_admin boolean default false,
-  created_at timestamptz default now()
-);
+    <div id="auth-error" class="error"></div>
+    <div id="auth-success" class="success"></div>
 
-alter table profiles enable row level security;
-alter table messages enable row level security;
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <button class="btn" id="login-btn">Log in</button>
 
-create or replace function is_admin()
-returns boolean
-language plpgsql
-security definer
-as $$
-begin
-  return exists (
-    select 1 from profiles
-    where id = auth.uid() and role = 'admin'
-  );
-end;
-$$;
+      <div class="divider">or</div>
 
-create policy "Users can view their own profile" on profiles
-  for select using (auth.uid() = id or is_admin());
+      <button class="btn btn-google" id="google-login-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="#fbc02d" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#e53935" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4caf50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1565c0" d="M43.611,20.083L43.595,20L24,20v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+        Sign in with Google
+      </button>
 
-create policy "Users can update their own profile" on profiles
-  for update using (auth.uid() = id);
+      <div class="toggle-link" id="show-signup">Don't have an account? Sign up</div>
+    </div>
 
-create policy "Users can insert their own profile" on profiles
-  for insert with check (auth.uid() = id);
+    <div id="signup-form" class="hidden">
+      <div class="form-group">
+        <label>Full name</label>
+        <input type="text" id="signup-name" placeholder="Jane Doe" />
+      </div>
+      <div class="form-group">
+        <label>Phone (optional)</label>
+        <input type="text" id="signup-phone" placeholder="(305) 555-1234" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signup-password" placeholder="••••••••" />
+      </div>
+      <button class="btn" id="signup-btn">Create account</button>
+      <div class="toggle-link" id="show-login">Already have an account? Log in</div>
+    </div>
+  </div>
 
-create policy "Users can view messages" on messages
-  for select using (customer_id = auth.uid() or is_admin());
+  <div id="dashboard-section" class="hidden">
+    <div class="dash-header">
+      <div>
+        <h2 id="dash-welcome">Hello, 👋</h2>
+        <span class="role-badge" id="role-badge">customer</span>
+      </div>
+      <button class="logout-btn" id="logout-btn">Logout</button>
+    </div>
 
-create policy "Users can send messages" on messages
-  for insert with check (customer_id = auth.uid() or is_admin());
+    <div id="dash-error" class="error"></div>
+    <div id="dash-success" class="success"></div>
 
-create policy "Admins can update messages" on messages
-  for update using (is_admin());
+    <div id="admin-controls" class="admin-controls hidden">
+      <label for="customer-filter">💬 Chat with customer</label>
+      <select id="customer-filter">
+        <option value="">-- All customers --</option>
+      </select>
+    </div>
+
+    <div class="message-area" id="message-area">
+      <div class="empty-state">No messages yet.</div>
+    </div>
+
+    <div class="compose">
+      <textarea id="msg-input" placeholder="Type a message…" rows="1"></textarea>
+      <button class="btn" id="send-btn">Send</button>
+    </div>
+    <p style="font-size:0.7rem;color:#999;margin-top:6px;text-align:right;">
+      Customers see only their messages • You see all
+    </p>
+  </div>
+</div>
+
+<script>
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', function() {
+
+    console.log('DOM loaded – initializing FedPromptly');
+
+    // Check Supabase client
+    if (typeof window.supabase === 'undefined') {
+      alert('Supabase client failed to load. Check your internet connection or CDN.');
+      console.error('Supabase client not found!');
+      return;
+    }
+
+    const SUPABASE_URL = 'https://fwxywuobrjialbqwvxrb.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_V-egUjkR1DXVqRXWFGFPdQ_f9K7SJnu';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase client initialized');
+
+    const $ = (id) => document.getElementById(id);
+    const authSection = $('auth-section');
+    const dashSection = $('dashboard-section');
+    const loginForm = $('login-form');
+    const signupForm = $('signup-form');
+    const loginBtn = $('login-btn');
+    const signupBtn = $('signup-btn');
+    const showSignup = $('show-signup');
+    const showLogin = $('show-login');
+    const logoutBtn = $('logout-btn');
+    const msgInput = $('msg-input');
+    const sendBtn = $('send-btn');
+    const messageArea = $('message-area');
+    const dashWelcome = $('dash-welcome');
+    const roleBadge = $('role-badge');
+    const adminControls = $('admin-controls');
+    const customerFilter = $('customer-filter');
+    const authError = $('auth-error');
+    const authSuccess = $('auth-success');
+    const dashError = $('dash-error');
+    const dashSuccess = $('dash-success');
+    const googleLoginBtn = $('google-login-btn');
+
+    let currentUser = null;
+    let currentCustomerId = null;
+    let allCustomers = [];
+
+    function showError(el, msg) {
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+    function hideError(el) {
+      el.style.display = 'none';
+      el.textContent = '';
+    }
+    function showSuccess(el, msg) {
+      el.style.display = 'block';
+      el.textContent = msg;
+      setTimeout(() => { el.style.display = 'none'; }, 3000);
+    }
+
+    function setAuthView(showLoginView) {
+      loginForm.classList.toggle('hidden', !showLoginView);
+      signupForm.classList.toggle('hidden', showLoginView);
+      hideError(authError);
+      hideError(authSuccess);
+    }
+
+    async function handleSignUp() {
+      console.log('SignUp clicked');
+      const email = $('signup-email').value.trim();
+      const password = $('signup-password').value;
+      const full_name = $('signup-name').value.trim();
+      const phone = $('signup-phone').value.trim();
+
+      if (!email || !password || !full_name) {
+        return showError(authError, 'Please fill in name, email and password.');
+      }
+      hideError(authError);
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        console.error('SignUp error:', error);
+        return showError(authError, error.message);
+      }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{ id: data.user.id, email, full_name, phone, role: 'customer' }]);
+
+      if (profileError) {
+        console.error('Profile insert error:', profileError);
+        showError(authError, 'Account created but profile failed. Please contact support.');
+        return;
+      }
+
+      showSuccess(authSuccess, 'Account created! Please log in.');
+      setAuthView(true);
+      $('login-email').value = email;
+      $('login-password').value = '';
+    }
+
+    async function handleLogin() {
+      console.log('Login clicked');
+      const email = $('login-email').value.trim();
+      const password = $('login-password').value;
+      if (!email || !password) return showError(authError, 'Enter email and password.');
+      hideError(authError);
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error('Login error:', error);
+        return showError(authError, error.message);
+      }
+    }
+
+    async function handleGoogleLogin() {
+      console.log('Google Login clicked');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) {
+        console.error('Google OAuth error:', error);
+        showError(authError, error.message);
+      }
+    }
+
+    async function handleLogout() {
+      console.log('Logout clicked');
+      await supabase.auth.signOut();
+    }
+
+    async function loadProfile(userId) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (error || !data) {
+        console.error('Profile load error', error);
+        return null;
+      }
+      return data;
+    }
+
+    async function loadCustomers() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('role', 'customer')
+        .order('full_name');
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data;
+    }
+
+    function renderMessages(messages, currentUserId, isAdmin, selectedCustomerId) {
+      messageArea.innerHTML = '';
+      if (!messages || messages.length === 0) {
+        messageArea.innerHTML = '<div class="empty-state">No messages to show.</div>';
+        return;
+      }
+
+      const sorted = [...messages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+      for (const msg of sorted) {
+        const div = document.createElement('div');
+        div.className = 'msg';
+
+        const isCustomerSender = !msg.is_from_admin;
+
+        if (isCustomerSender) {
+          div.classList.add('customer-msg');
+        } else {
+          div.classList.add('admin-msg');
+        }
+
+        if (isAdmin && selectedCustomerId === null) {
+          const label = document.createElement('span');
+          label.className = 'customer-label';
+          const customer = allCustomers.find(c => c.id === msg.customer_id);
+          label.textContent = customer ? `${customer.full_name} (${customer.email})` : 'Unknown customer';
+          div.appendChild(label);
+        }
+
+        const contentSpan = document.createElement('span');
+        contentSpan.textContent = msg.content;
+        div.appendChild(contentSpan);
+
+        const meta = document.createElement('span');
+        meta.className = 'meta';
+        const date = new Date(msg.created_at);
+        meta.textContent = date.toLocaleString();
+        div.appendChild(meta);
+
+        messageArea.appendChild(div);
+      }
+      messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    async function loadMessages() {
+      if (!currentUser) return;
+
+      const isAdmin = currentUser.role === 'admin';
+      let query = supabase.from('messages').select('*');
+
+      if (isAdmin && currentCustomerId) {
+        query = query.eq('customer_id', currentCustomerId);
+      } else if (!isAdmin) {
+        query = query.eq('customer_id', currentUser.id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: true });
+      if (error) {
+        console.error(error);
+        showError(dashError, 'Failed to load messages.');
+        return;
+      }
+      hideError(dashError);
+      renderMessages(data || [], currentUser.id, isAdmin, currentCustomerId);
+    }
+
+    async function sendMessage() {
+      console.log('Send message clicked');
+      const content = msgInput.value.trim();
+      if (!content) return;
+      if (!currentUser) return;
+
+      let customerId = currentUser.id;
+      const isAdmin = currentUser.role === 'admin';
+
+      if (isAdmin && currentCustomerId) {
+        customerId = currentCustomerId;
+      } else if (isAdmin && !currentCustomerId) {
+        if (allCustomers.length === 0) {
+          showError(dashError, 'No customers available.');
+          return;
+        }
+        customerId = allCustomers[0].id;
+        currentCustomerId = customerId;
+        customerFilter.value = customerId;
+      }
+
+      const payload = {
+        customer_id: customerId,
+        content: content,
+        is_from_admin: isAdmin
+      };
+
+      const { error } = await supabase.from('messages').insert([payload]);
+      if (error) {
+        console.error(error);
+        showError(dashError, 'Failed to send message.');
+        return;
+      }
+      msgInput.value = '';
+      hideError(dashError);
+      await loadMessages();
+      if (isAdmin && !currentCustomerId) {
+        await populateCustomerFilter();
+      }
+    }
+
+    async function populateCustomerFilter() {
+      const customers = await loadCustomers();
+      allCustomers = customers;
+      customerFilter.innerHTML = '<option value="">-- All customers --</option>';
+      customers.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.full_name} (${c.email})`;
+        customerFilter.appendChild(opt);
+      });
+      if (currentCustomerId) {
+        customerFilter.value = currentCustomerId;
+      }
+    }
+
+    let subscription = null;
+
+    function subscribeToMessages() {
+      if (subscription) {
+        subscription.unsubscribe();
+        subscription = null;
+      }
+
+      subscription = supabase
+        .channel('public:messages')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          () => { loadMessages(); }
+        )
+        .subscribe();
+    }
+
+    async function initDashboard(user) {
+      console.log('Initializing dashboard for user:', user.email);
+      let profile = await loadProfile(user.id);
+      if (!profile) {
+        const full_name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+        const email = user.email;
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id, email, full_name, role: 'customer' }]);
+        if (insertError) {
+          console.error('Failed to create profile for OAuth user', insertError);
+          await supabase.auth.signOut();
+          return;
+        }
+        profile = await loadProfile(user.id);
+        if (!profile) {
+          await supabase.auth.signOut();
+          return;
+        }
+      }
+
+      currentUser = { ...user, ...profile };
+
+      authSection.classList.add('hidden');
+      dashSection.classList.remove('hidden');
+
+      dashWelcome.textContent = `Hello, ${currentUser.full_name || 'Driver'} 👋`;
+      roleBadge.textContent = currentUser.role;
+
+      if (currentUser.role === 'admin') {
+        adminControls.classList.remove('hidden');
+        await populateCustomerFilter();
+      } else {
+        adminControls.classList.add('hidden');
+      }
+
+      await loadMessages();
+      subscribeToMessages();
+    }
+
+    // --- Auth state listener ---
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event);
+      if (event === 'SIGNED_IN' && session) {
+        await initDashboard(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        currentCustomerId = null;
+        if (subscription) {
+          subscription.unsubscribe();
+          subscription = null;
+        }
+        authSection.classList.remove('hidden');
+        dashSection.classList.add('hidden');
+        setAuthView(true);
+        $('login-password').value = '';
+        $('signup-password').value = '';
+        hideError(dashError);
+        hideError(dashSuccess);
+      }
+    });
+
+    // --- Attach event listeners (with console logs) ---
+    loginBtn.addEventListener('click', handleLogin);
+    signupBtn.addEventListener('click', handleSignUp);
+    logoutBtn.addEventListener('click', handleLogout);
+    googleLoginBtn.addEventListener('click', handleGoogleLogin);
+
+    showSignup.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Show signup clicked');
+      loginForm.classList.add('hidden');
+      signupForm.classList.remove('hidden');
+      hideError(authError);
+      hideError(authSuccess);
+    });
+
+    showLogin.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Show login clicked');
+      loginForm.classList.remove('hidden');
+      signupForm.classList.add('hidden');
+      hideError(authError);
+      hideError(authSuccess);
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    msgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    customerFilter.addEventListener('change', (e) => {
+      currentCustomerId = e.target.value || null;
+      loadMessages();
+    });
+
+    // Check for existing session
+    (async function checkSession() {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        await initDashboard(data.session.user);
+      } else {
+        setAuthView(true);
+      }
+    })();
+
+    console.log('✅ FedPromptly dashboard ready.');
+  }); // end DOMContentLoaded
+</script>
+</body>
+</html>
