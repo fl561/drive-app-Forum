@@ -2,786 +2,2723 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FedPromptly Delivery</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Fed Jumper – Secure Delivery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f4f6f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+    /* ----- RESET & BASE ----- */
+    * {
       margin: 0;
-      padding: 16px;
+      padding: 0;
+      box-sizing: border-box;
     }
-    .container {
-      max-width: 500px;
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      line-height: 1.5;
+      overflow-x: hidden;
+      padding-bottom: 80px;
+    }
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #121212;
+      min-height: 100vh;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ----- PROGRESS BAR ----- */
+    .progress-bar-container {
+      position: sticky;
+      top: 0;
+      z-index: 60;
       width: 100%;
-      background: white;
-      border-radius: 24px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      padding: 24px;
+      height: 3px;
+      background: rgba(245, 166, 35, 0.2);
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f5a623, #ffb347);
+      transition: width 0.6s cubic-bezier(0.34, 1.2, 0.64, 1);
+      border-radius: 0 2px 2px 0;
+    }
+    .progress-bar-fill.loading {
+      width: 70%;
+      animation: pulseProgress 1.2s ease-in-out infinite;
+    }
+    .progress-bar-fill.done {
+      width: 100%;
+    }
+    @keyframes pulseProgress {
+      0%, 100% { width: 70%; }
+      50% { width: 85%; }
+    }
+
+    /* ----- HEADER ----- */
+    .app-header {
+      background: #0d0d0d;
+      color: #ffffff;
+      padding: 16px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .app-header .logo-small {
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+    }
+    .app-header .logo-small span {
+      color: #f5a623;
+    }
+    .app-header .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .discord-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #b0b0b0;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .discord-badge:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .discord-badge .dot {
+      color: #23a55a;
+    }
+    .discord-badge #onlineCount {
+      font-weight: 800;
+      color: #fff;
+      min-width: 20px;
+      text-align: center;
+    }
+    .ai-chat-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      overflow: hidden;
+    }
+    .ai-chat-btn .lock-icon {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      background: #1a1a2e;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      font-size: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #9ca3af;
+      transition: all 0.3s ease;
+    }
+    .ai-chat-btn.unlocked {
+      border-color: #f5a623;
+      background: rgba(245, 166, 35, 0.15);
+      color: #f5a623;
+    }
+    .ai-chat-btn.unlocked .lock-icon {
+      opacity: 0;
+      transform: scale(0.5);
+      pointer-events: none;
+    }
+    .ai-chat-btn:hover {
+      transform: scale(1.05);
+    }
+    .ai-chat-btn .tooltip-text {
+      position: absolute;
+      bottom: -28px;
+      right: 0;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      font-weight: 600;
+    }
+    .ai-chat-btn:hover .tooltip-text {
+      opacity: 1;
+    }
+
+    /* ----- LOCATION BAR ----- */
+    .location-bar {
+      background: #1a1a1a;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: default;
+    }
+    .location-bar .loc-icon {
+      color: #f5a623;
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+    }
+    .location-bar .loc-text {
+      flex: 1;
+    }
+    .location-bar .loc-text .main {
+      font-weight: 600;
+      font-size: 16px;
+      color: #fff;
+    }
+    .location-bar .loc-text .sub {
+      font-size: 13px;
+      color: #a0a0a0;
+    }
+
+    /* ----- MAP AREA (home) ----- */
+    .map-area {
+      background: linear-gradient(145deg, #1e1e2f, #0f0f1a);
+      height: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .map-area .map-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 40%, rgba(245, 166, 35, 0.08), transparent 70%);
+    }
+    .map-area .map-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      color: #e0e0e0;
+    }
+    .map-area .map-content h2 {
+      font-weight: 700;
+      font-size: 22px;
+      color: #fff;
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+    .map-area .map-content p {
+      font-size: 14px;
+      color: #aaa;
+    }
+    .big-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
       position: relative;
     }
-    h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 8px; color: #0a0a0a; }
-    .sub { color: #666; margin-bottom: 24px; font-size: 0.95rem; }
-    .form-group { margin-bottom: 14px; }
-    label { display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; color: #1e1e1e; }
-    input, select, textarea {
-      width: 100%; padding: 12px 14px; border: 1px solid #d0d5dd; border-radius: 12px;
-      font-size: 1rem; background: white; transition: 0.2s;
-    }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-    textarea { resize: vertical; min-height: 60px; }
-    .btn {
-      width: 100%; padding: 12px; background: #2563eb; color: white; border: none;
-      border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.15s;
-    }
-    .btn:hover { background: #1d4ed8; }
-    .btn-secondary { background: transparent; color: #2563eb; border: 1px solid #d0d5dd; }
-    .btn-secondary:hover { background: #f8fafc; }
-    .toggle-link { text-align: center; margin-top: 16px; color: #2563eb; font-weight: 500; cursor: pointer; }
-    .toggle-link:hover { text-decoration: underline; }
-    .hidden { display: none !important; }
-    #auth-section, #dashboard-section { transition: opacity 0.2s; }
-    .dash-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
-    }
-    .dash-header h2 { font-size: 1.3rem; font-weight: 600; }
-    .dash-header .role-badge {
-      background: #eef2ff; color: #2563eb; padding: 4px 12px;
-      border-radius: 40px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-    }
-    .logout-btn {
-      background: none; border: 1px solid #e5e7eb; padding: 6px 14px;
-      border-radius: 40px; font-size: 0.85rem; cursor: pointer; color: #444;
-    }
-    .logout-btn:hover { background: #f3f4f6; }
-    .admin-controls {
-      background: #f8fafc; padding: 14px; border-radius: 16px;
-      margin-bottom: 16px; border: 1px solid #e9edf2;
-    }
-    .admin-controls label { font-size: 0.8rem; color: #444; }
-    .admin-controls select { margin-top: 4px; }
-    .message-area {
-      background: #fafbfc; border-radius: 16px; padding: 12px;
-      height: 340px; overflow-y: auto; border: 1px solid #edf0f5;
-      margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px;
-    }
-    .msg {
-      padding: 10px 14px; border-radius: 18px; max-width: 85%;
-      word-break: break-word; font-size: 0.95rem; line-height: 1.4;
-      align-self: flex-start; background: white; border: 1px solid #e5e9f0;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-    }
-    .msg.customer-msg { align-self: flex-end; background: #2563eb; color: white; border: none; }
-    .msg.admin-msg { background: #f1f5f9; border: 1px solid #dbe0e8; }
-    .msg .meta { font-size: 0.65rem; opacity: 0.6; margin-top: 4px; display: block; font-weight: 400; }
-    .msg.customer-msg .meta { color: rgba(255,255,255,0.7); }
-    .msg .customer-label { font-weight: 600; font-size: 0.75rem; display: block; margin-bottom: 2px; color: #1e293b; }
-    .msg.customer-msg .customer-label { color: rgba(255,255,255,0.85); }
-    .compose { display: flex; gap: 10px; align-items: flex-end; }
-    .compose textarea { flex: 1; min-height: 50px; padding: 10px 14px; }
-    .compose .btn { width: auto; padding: 10px 20px; height: 50px; white-space: nowrap; }
-    .error { color: #dc2626; background: #fef2f2; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
-    .success { color: #16a34a; background: #f0fdf4; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
-    .empty-state { text-align: center; color: #888; padding: 40px 0; font-size: 0.95rem; }
-
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+    .big-icon .cube-scene {
+      perspective: 400px;
+      width: 100%;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 999;
     }
-    .modal {
-      background: white;
-      max-width: 400px;
-      width: 90%;
-      padding: 24px;
-      border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      animation: fadeIn 0.2s ease;
+    .big-icon .cube {
+      width: 68px;
+      height: 68px;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: spinCube 8s infinite linear;
     }
-    @keyframes fadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
-    .modal h3 { font-size: 1.3rem; margin-bottom: 8px; }
-    .modal p { color: #444; margin-bottom: 16px; line-height: 1.5; }
-    .modal .btn-group { display: flex; gap: 10px; margin-top: 12px; }
-    .modal .btn-group .btn { flex: 1; }
-    .modal .btn-close { background: transparent; color: #666; border: 1px solid #d0d5dd; }
-    .modal .btn-close:hover { background: #f3f4f6; }
-    .modal input { margin-bottom: 12px; }
-
-    .loading-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
+    .big-icon .cube-face {
+      position: absolute;
+      width: 68px;
+      height: 68px;
+      background: rgba(245, 166, 35, 0.12);
+      border: 2px solid rgba(245, 166, 35, 0.4);
+      border-radius: 10px;
       display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.65rem;
+      color: #f5a623;
+      backface-visibility: visible;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 10px rgba(245, 166, 35, 0.2);
+    }
+    .big-icon .cube-face.front { transform: translateZ(34px); background: rgba(245, 166, 35, 0.18); border-color: #f5a623; }
+    .big-icon .cube-face.back { transform: rotateY(180deg) translateZ(34px); background: rgba(255, 107, 74, 0.15); border-color: #ff6b4a; }
+    .big-icon .cube-face.right { transform: rotateY(90deg) translateZ(34px); background: rgba(245, 166, 35, 0.08); border-color: rgba(245, 166, 35, 0.3); }
+    .big-icon .cube-face.left { transform: rotateY(-90deg) translateZ(34px); background: rgba(245, 166, 35, 0.08); border-color: rgba(245, 166, 35, 0.3); }
+    .big-icon .cube-face.top { transform: rotateX(90deg) translateZ(34px); background: rgba(245, 166, 35, 0.12); border-color: rgba(245, 166, 35, 0.35); }
+    .big-icon .cube-face.bottom { transform: rotateX(-90deg) translateZ(34px); background: rgba(245, 166, 35, 0.12); border-color: rgba(245, 166, 35, 0.35); }
+    @keyframes spinCube {
+      0% { transform: rotateX(0) rotateY(0); }
+      100% { transform: rotateX(360deg) rotateY(360deg); }
+    }
+
+    /* ----- ANIMATIONS ----- */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeInUp 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    }
+    .fade-in-delay-1 { animation-delay: 0.05s; }
+    .fade-in-delay-2 { animation-delay: 0.1s; }
+    .fade-in-delay-3 { animation-delay: 0.15s; }
+    .fade-in-delay-4 { animation-delay: 0.2s; }
+    .fade-in-delay-5 { animation-delay: 0.25s; }
+    .fade-in-delay-6 { animation-delay: 0.3s; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stagger-list>* {
+      opacity: 0;
+      animation: fadeInUp 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    }
+    .stagger-list>*:nth-child(1) { animation-delay: 0.02s; }
+    .stagger-list>*:nth-child(2) { animation-delay: 0.06s; }
+    .stagger-list>*:nth-child(3) { animation-delay: 0.10s; }
+    .stagger-list>*:nth-child(4) { animation-delay: 0.14s; }
+    .stagger-list>*:nth-child(5) { animation-delay: 0.18s; }
+    .stagger-list>*:nth-child(6) { animation-delay: 0.22s; }
+    .stagger-list>*:nth-child(7) { animation-delay: 0.26s; }
+    .stagger-list>*:nth-child(8) { animation-delay: 0.30s; }
+    .stagger-list>*:nth-child(9) { animation-delay: 0.34s; }
+    .stagger-list>*:nth-child(10) { animation-delay: 0.38s; }
+
+    /* ----- SPINNER OVERLAY ----- */
+    .spinner-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 500;
+      display: none;
+      justify-content: center;
+      align-items: center;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      transition: opacity 0.2s ease;
+      gap: 16px;
+      max-width: 480px;
+      margin: 0 auto;
     }
-    .loading-overlay .spinner {
+    .spinner-overlay.active { display: flex; }
+    .spinner-circle {
       width: 48px;
       height: 48px;
-      border: 5px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
+      border: 4px solid rgba(245, 166, 35, 0.2);
+      border-top-color: #f5a623;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    .loading-overlay p {
-      color: white;
-      margin-top: 16px;
-      font-size: 1rem;
-      font-weight: 500;
+      animation: spin 0.8s cubic-bezier(0.34, 1.2, 0.64, 1) infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-text {
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ----- RIPPLE ----- */
+    .ripple {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(245, 166, 35, 0.4);
+      transform: scale(0);
+      animation: rippleAnim 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+      pointer-events: none;
+    }
+    .ripple-effect.dark { background: rgba(255, 255, 255, 0.15); }
+    .ripple-effect.white { background: rgba(255, 255, 255, 0.3); }
+    @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+    /* ----- TEXT MORPHING ----- */
+    .morph-number {
+      display: inline-block;
+      transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+      will-change: transform, opacity;
+    }
+    .morph-number.morph-up { transform: translateY(-8px); opacity: 0; }
+    .morph-number.morph-down { transform: translateY(8px); opacity: 0; }
+    .morph-number.morph-in { transform: translateY(0); opacity: 1; }
+
+    /* ============================================================
+       GLOBAL TAB CONTENT – consistent dark cards
+       ============================================================ */
+    .tab-content {
+      display: none;
+      animation: fadeInUp 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    .tab-content.active { display: block; }
+
+    /* ----- HOME TAB (quick actions, service scroll) ----- */
+    .quick-actions {
+      padding: 20px 16px 12px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .quick-actions::-webkit-scrollbar { display: none; }
+    .quick-action-card {
+      flex: 0 0 140px;
+      background: #1a1a2a;
+      border-radius: 20px;
+      padding: 16px 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      color: #e0e0e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .quick-action-card:hover {
+      transform: translateY(-3px);
+      border-color: #f5a623;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    .quick-action-card .qa-icon { font-size: 28px; color: #f5a623; margin-bottom: 8px; }
+    .quick-action-card .qa-title { font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 2px; }
+    .quick-action-card .qa-sub { font-size: 11px; color: #a0a0a0; }
+
+    .service-scroll {
+      padding: 0 16px 16px;
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .service-scroll::-webkit-scrollbar { display: none; }
+    .service-card-uber {
+      flex: 0 0 180px;
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 18px 16px 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      color: #e0e0e0;
+    }
+    .service-card-uber:hover {
+      transform: translateY(-4px);
+      border-color: #f5a623;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    }
+    .service-card-uber .sc-icon { font-size: 28px; color: #f5a623; margin-bottom: 10px; }
+    .service-card-uber .sc-title { font-weight: 700; font-size: 16px; color: #fff; }
+    .service-card-uber .sc-desc { font-size: 12px; color: #a0a0a0; margin-top: 4px; }
+    .service-card-uber .sc-price { font-weight: 700; font-size: 18px; color: #fff; margin-top: 10px; }
+    .service-card-uber .sc-price small { font-weight: 400; font-size: 12px; color: #a0a0a0; }
+    .service-card-uber .sc-badge {
+      position: absolute; top: 12px; right: 12px;
+      background: #f5a623; color: #000; font-size: 9px; font-weight: 700;
+      padding: 2px 10px; border-radius: 30px; text-transform: uppercase;
+    }
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 20px 12px;
+    }
+    .section-header h3 { font-size: 18px; font-weight: 700; color: #fff; }
+    .section-header a { font-size: 13px; color: #f5a623; font-weight: 600; cursor: pointer; }
+
+    /* ----- FAQ TAB ----- */
+    .faq-list { padding: 8px 20px 24px; }
+    .faq-item-uber {
+      background: #1a1a2a;
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      color: #e0e0e0;
+    }
+    .faq-item-uber:hover {
+      border-color: rgba(255,255,255,0.12);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .faq-item-uber .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 600; font-size: 15px; color: #fff;
+    }
+    .faq-item-uber .faq-q i { color: #888; transition: transform 0.3s; }
+    .faq-item-uber.active .faq-q i { transform: rotate(180deg); }
+    .faq-item-uber .faq-a {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.34,1.2,0.64,1), margin 0.4s cubic-bezier(0.34,1.2,0.64,1);
+      color: #b0b0b0; font-size: 14px;
+    }
+    .faq-item-uber.active .faq-a {
+      max-height: 200px; margin-top: 12px;
+    }
+
+    /* ----- LEGAL TAB ----- */
+    .legal-panel { padding: 16px 20px 24px; }
+    .legal-panel .legal-card {
+      background: #1a1a2a;
+      border-radius: 20px;
+      padding: 18px 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.3s ease;
+      color: #e0e0e0;
+    }
+    .legal-panel .legal-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .legal-panel .legal-card h4 { font-size: 16px; font-weight: 700; color: #f5a623; margin-bottom: 8px; }
+    .legal-panel .legal-card p, .legal-panel .legal-card li {
+      font-size: 14px; color: #b0b0b0; line-height: 1.6;
+    }
+    .legal-panel .legal-card ul { padding-left: 20px; margin-top: 6px; }
+
+    /* ----- SERVICES TAB ----- */
+    .services-tabs {
+      display: flex; gap: 8px; padding: 12px 16px 4px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .services-tabs::-webkit-scrollbar { display: none; }
+    .services-tabs .svc-tab {
+      flex: 0 0 auto; padding: 8px 18px; border-radius: 40px;
+      font-weight: 600; font-size: 13px;
+      background: #2a2a3a; color: #b0b0b0; border: none; cursor: pointer;
+      transition: all 0.3s ease; font-family: inherit; white-space: nowrap;
+      position: relative; overflow: hidden;
+    }
+    .services-tabs .svc-tab.active {
+      background: #f5a623; color: #000;
+    }
+    .services-tabs .svc-tab i { margin-right: 6px; }
+
+    .service-pane {
+      display: none; padding: 16px 20px 24px;
+      animation: fadeInUp 0.4s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .service-pane.active-pane { display: block; }
+    .service-pane .svc-card {
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 20px 18px;
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 16px;
+      transition: all 0.3s ease;
+      color: #e0e0e0;
+    }
+    .service-pane .svc-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .service-pane .svc-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #fff; }
+    .service-pane .svc-card .svc-meta { font-size: 14px; color: #b0b0b0; }
+    .service-pane .svc-card .stat-row {
+      display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0 10px;
+    }
+    .service-pane .svc-card .stat-row .stat-item {
+      background: #0f0f1f; border-radius: 16px; padding: 12px 16px;
+      flex: 1 0 100px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: all 0.3s ease;
+    }
+    .service-pane .svc-card .stat-row .stat-item:hover { background: #1e1e2e; }
+    .service-pane .svc-card .stat-row .stat-item .num {
+      font-weight: 800; font-size: 22px; color: #f5a623;
+    }
+    .service-pane .svc-card .stat-row .stat-item .label {
+      font-size: 12px; color: #a0a0a0;
+    }
+    .service-pane .svc-card .cta-link {
+      display: inline-block; margin-top: 12px;
+      background: #f5a623; color: #000; padding: 10px 28px;
+      border-radius: 60px; font-weight: 700; font-size: 14px;
+      text-decoration: none; transition: all 0.3s ease;
+      border: none; cursor: pointer; font-family: inherit;
+      position: relative; overflow: hidden;
+    }
+    .service-pane .svc-card .cta-link:hover {
+      transform: scale(1.02); box-shadow: 0 6px 20px rgba(245,166,35,0.3);
+    }
+    .service-pane .svc-card .cta-link-outline {
+      background: transparent; color: #f5a623; border: 2px solid #f5a623;
+      padding: 8px 24px; border-radius: 60px; font-weight: 700; font-size: 14px;
+      text-decoration: none; display: inline-block; margin-top: 12px;
+      transition: all 0.3s ease; cursor: pointer; font-family: inherit;
+      position: relative; overflow: hidden;
+    }
+    .service-pane .svc-card .cta-link-outline:hover {
+      background: #f5a623; color: #000;
+    }
+
+    /* ----- AI TAB ----- */
+    .ai-container { padding: 20px; position: relative; min-height: 70vh; }
+    .ai-container .chat-messages {
+      height: 400px; overflow-y: auto;
+      background: #0f0f1f; border-radius: 16px; padding: 16px;
+      margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .ai-container .chat-msg {
+      display: flex; align-items: flex-start; gap: 8px;
+      animation: fadeInUp 0.3s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .ai-container .chat-msg.user { flex-direction: row-reverse; }
+    .ai-container .chat-msg .bubble {
+      max-width: 80%; padding: 10px 16px; border-radius: 20px;
+      font-size: 14px; line-height: 1.5;
+      background: #1e1e2e; border: 1px solid rgba(255,255,255,0.08);
+      color: #e0e0e0;
+    }
+    .ai-container .chat-msg.user .bubble {
+      background: #f5a623; color: #000; border: none;
+    }
+    .ai-container .chat-msg .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #2a2a3a; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; color: #b0b0b0;
+    }
+    .ai-container .chat-msg.user .avatar { background: #f5a623; color: #000; }
+    .ai-container .chat-input-area {
+      padding: 0; border: none; display: flex; gap: 10px; margin-bottom: 12px;
+    }
+    .ai-container .chat-input-area input {
+      flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 40px;
+      padding: 12px 16px; font-size: 14px; outline: none; font-family: inherit;
+      transition: border 0.2s; background: #0d0d1a; color: #e0e0e0;
+    }
+    .ai-container .chat-input-area input:focus { border-color: #f5a623; }
+    .ai-container .chat-input-area input::placeholder { color: #666; }
+    .ai-container .chat-input-area button {
+      background: #f5a623; border: none; color: #000;
+      width: 48px; height: 48px; border-radius: 50%; font-size: 18px;
+      cursor: pointer; transition: all 0.3s ease;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .ai-container .chat-input-area button:hover { transform: scale(1.04); }
+    .ai-container .chat-suggestions {
+      padding: 0; border: none; display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .ai-container .chat-suggestions .chip {
+      background: #2a2a3a; padding: 6px 16px; border-radius: 30px;
+      font-size: 12px; font-weight: 600; color: #b0b0b0; cursor: pointer;
+      transition: all 0.3s ease; border: none; font-family: inherit;
+      position: relative; overflow: hidden;
+    }
+    .ai-container .chat-suggestions .chip:hover {
+      background: #f5a623; color: #000;
+    }
+    #aiLockOverlay {
+      display: none; position: absolute; inset: 0;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+      border-radius: 24px; justify-content: center; align-items: center;
+      flex-direction: column; z-index: 10; text-align: center; padding: 40px;
+    }
+    #aiLockOverlay.active { display: flex; }
+    #aiLockOverlay i { font-size: 48px; color: #f5a623; margin-bottom: 16px; }
+    #aiLockOverlay h3 { font-weight: 700; font-size: 20px; margin-bottom: 8px; color: #fff; }
+    #aiLockOverlay p { color: #b0b0b0; margin-bottom: 20px; max-width: 280px; }
+    #aiLockOverlay .cta-link {
+      background: #f5a623; color: #000; padding: 12px 32px;
+      border-radius: 60px; font-weight: 700; border: none; cursor: pointer;
+      font-family: inherit; transition: all 0.3s ease;
+    }
+    #aiLockOverlay .cta-link:hover { transform: scale(1.02); box-shadow: 0 6px 20px rgba(245,166,35,0.3); }
+    #aiLockOverlay .sub-text { margin-top: 16px; font-size: 13px; color: #888; }
+    #aiLockOverlay .sub-text a { color: #f5a623; cursor: pointer; text-decoration: underline; }
+
+    /* ----- PAYMENT TAB (redesigned with large vertical plan cards) ----- */
+    .payment-panel { padding: 16px 20px 24px; }
+
+    /* Plan cards – large vertical */
+    .plan-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .plan-card-large {
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 24px 20px;
+      border: 2px solid rgba(255,255,255,0.06);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .plan-card-large:hover {
+      border-color: #f5a623;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .plan-card-large .plan-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .plan-card-large .plan-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .plan-card-large .plan-badge {
+      background: rgba(245, 166, 35, 0.2);
+      color: #f5a623;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 30px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(245, 166, 35, 0.3);
+    }
+    .plan-card-large .plan-price {
+      font-size: 34px;
+      font-weight: 800;
+      color: #f5a623;
+      margin: 4px 0;
+    }
+    .plan-card-large .plan-price small {
+      font-size: 16px;
+      font-weight: 400;
+      color: #a0a0a0;
+    }
+    .plan-card-large .plan-features {
+      font-size: 14px;
+      color: #b0b0b0;
+      line-height: 1.8;
+      margin: 6px 0 10px;
+    }
+    .plan-card-large .plan-features i {
+      color: #f5a623;
+      margin-right: 8px;
+      width: 18px;
+      text-align: center;
+    }
+    .plan-card-large .plan-btn {
+      background: #f5a623;
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 60px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: 0.2s;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .plan-card-large .plan-btn:hover {
+      background: #ffb347;
+      transform: scale(1.01);
+    }
+    .plan-card-large.selected {
+      border-color: #f5a623;
+      background: #1e1e2e;
+      box-shadow: 0 0 0 1px #f5a623, 0 8px 32px rgba(245,166,35,0.15);
+    }
+    .plan-card-large .plan-check {
+      display: none;
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      color: #f5a623;
+      font-size: 20px;
+    }
+    .plan-card-large.selected .plan-check {
+      display: block;
+    }
+
+    /* Hidden payment methods section (secret tab) */
+    .payment-methods-hidden {
+      display: none;
+      animation: fadeInUp 0.4s cubic-bezier(0.34,1.2,0.64,1);
+      margin-top: 8px;
+    }
+    .payment-methods-hidden.visible {
+      display: block;
+    }
+    .payment-methods-hidden .pay-card {
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 20px 18px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      text-align: center;
+      transition: all 0.3s ease;
+      color: #e0e0e0;
+    }
+    .payment-methods-hidden .pay-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .payment-methods-hidden .pay-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #fff; }
+    .payment-methods-hidden .pay-card .pay-btn {
+      display: inline-block; padding: 14px 40px; border-radius: 60px;
+      font-weight: 700; font-size: 16px; border: none; cursor: pointer;
+      transition: all 0.3s ease; text-decoration: none; color: #fff;
+      font-family: inherit; position: relative; overflow: hidden;
+    }
+    .payment-methods-hidden .pay-card .pay-btn.venmo { background: linear-gradient(145deg, #1A8CFF, #0066DD); }
+    .payment-methods-hidden .pay-card .pay-btn.paypal { background: linear-gradient(145deg, #0070ba, #003087); }
+    .payment-methods-hidden .pay-card .pay-btn.stripe { background: linear-gradient(145deg, #635BFF, #4A42D6); }
+    .payment-methods-hidden .pay-card .pay-btn:hover {
+      transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .payment-methods-hidden .pay-card .pay-btn i { margin-right: 10px; }
+    .payment-methods-hidden .pay-card .paypal-container { min-height: 60px; display: flex; justify-content: center; align-items: center; }
+
+    /* Selected plan indicator */
+    .selected-plan-label {
+      text-align: center;
+      color: #f5a623;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .selected-plan-label.visible {
+      display: block;
+    }
+
+    /* ----- ORDER TAB (unchanged) ----- */
+    .order-container {
+      padding: 16px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 70vh;
+    }
+    .order-container .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .order-container .order-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .order-container .order-header .order-status {
+      font-size: 12px;
+      font-weight: 600;
+      color: #f5a623;
+      background: rgba(245, 166, 35, 0.15);
+      padding: 4px 14px;
+      border-radius: 40px;
+      border: 1px solid rgba(245, 166, 35, 0.3);
+    }
+    .order-auth {
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 24px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .order-auth h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .order-auth .sub {
+      color: #b0b0b0;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .order-auth .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .order-auth .input-group label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #c0c0c0;
+    }
+    .order-auth .input-group input {
+      padding: 12px 16px;
+      background: #0d0d1a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      font-size: 15px;
+      color: #fff;
+      transition: 0.2s;
+      font-family: inherit;
+    }
+    .order-auth .input-group input:focus {
+      border-color: #f5a623;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.15);
+    }
+    .order-auth .input-group input::placeholder { color: #555; }
+    .order-auth .btn-primary {
+      background: #f5a623;
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+      width: 100%;
+      font-family: inherit;
+    }
+    .order-auth .btn-primary:hover {
+      background: #ffb347;
+      transform: scale(1.01);
+    }
+    .order-auth .btn-secondary {
+      background: transparent;
+      border: none;
+      color: #f5a623;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 4px 0;
+    }
+    .order-auth .toggle-link {
+      text-align: center;
+      margin-top: 12px;
+      color: #888;
+      font-size: 14px;
+    }
+    .order-auth .error-box {
+      background: rgba(255, 0, 0, 0.12);
+      color: #ff6b6b;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 0, 0, 0.15);
+    }
+    .order-phone-modal {
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 24px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: none;
+    }
+    .order-phone-modal.active { display: block; }
+    .order-phone-modal h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .order-phone-modal .sub {
+      color: #b0b0b0;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .order-phone-modal input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #0d0d1a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      font-size: 15px;
+      color: #fff;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+    .order-phone-modal input:focus {
+      border-color: #f5a623;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.15);
+    }
+    .order-phone-modal input::placeholder { color: #555; }
+    .order-chat {
+      background: #1a1a2a;
+      border-radius: 24px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: none;
+      flex-direction: column;
+      height: 520px;
+    }
+    .order-chat.active { display: flex; }
+    .order-chat .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 12px;
+    }
+    .order-chat .chat-header h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .order-chat .chat-header .logout-btn {
+      background: none;
+      border: none;
+      color: #888;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      padding: 4px 12px;
+      border-radius: 8px;
+      transition: 0.2s;
+    }
+    .order-chat .chat-header .logout-btn:hover {
+      background: rgba(255, 0, 0, 0.15);
+      color: #ff6b6b;
+    }
+    .order-chat .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+      margin-bottom: 12px;
+      max-height: 320px;
+    }
+    .order-chat .chat-messages .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      max-width: 85%;
+      word-wrap: break-word;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .order-chat .chat-messages .chat-bubble.customer {
+      background: #2a2a3a;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      color: #e0e0e0;
+    }
+    .order-chat .chat-messages .chat-bubble.admin {
+      background: #f5a623;
+      color: #000;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .order-chat .chat-messages .chat-bubble.system {
+      background: rgba(255, 255, 255, 0.04);
+      color: #888;
+      align-self: center;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      max-width: 90%;
+      text-align: center;
+      font-size: 12px;
+      border-radius: 20px;
+    }
+    .order-chat .chat-messages .chat-bubble .time {
+      font-size: 9px;
+      opacity: 0.5;
+      margin-top: 4px;
+      display: block;
+    }
+    .order-chat .chat-messages .empty-state {
+      color: #666;
+      text-align: center;
+      padding: 30px 0;
+      font-size: 14px;
+    }
+    .order-chat .chat-input-row {
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 12px;
+    }
+    .order-chat .chat-input-row input {
+      flex: 1;
+      padding: 10px 16px;
+      background: #0d0d1a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 30px;
+      font-size: 14px;
+      color: #fff;
+      font-family: inherit;
+    }
+    .order-chat .chat-input-row input:focus {
+      border-color: #f5a623;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
+    }
+    .order-chat .chat-input-row input::placeholder { color: #555; }
+    .order-chat .chat-input-row button {
+      background: #f5a623;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: 0.2s;
+    }
+    .order-chat .chat-input-row button:hover { background: #ffb347; }
+    .order-admin {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 70vh;
+    }
+    .order-admin.active { display: flex; }
+    .order-admin .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .order-admin .admin-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .order-admin .admin-header .admin-badge {
+      font-size: 12px;
+      font-weight: 600;
+      color: #f5a623;
+      background: rgba(245, 166, 35, 0.15);
+      padding: 4px 14px;
+      border-radius: 40px;
+      border: 1px solid rgba(245, 166, 35, 0.3);
+    }
+    .order-admin .admin-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .order-admin .customer-list {
+      background: #1a1a2a;
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .order-admin .customer-list .customer-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: 0.15s;
+      border-left: 3px solid transparent;
+    }
+    .order-admin .customer-list .customer-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .order-admin .customer-list .customer-item.active {
+      background: rgba(245, 166, 35, 0.08);
+      border-left-color: #f5a623;
+    }
+    .order-admin .customer-list .customer-item .name {
+      font-weight: 600;
+      color: #fff;
+      font-size: 14px;
+    }
+    .order-admin .customer-list .customer-item .phone {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .order-admin .admin-chat-box {
+      background: #1a1a2a;
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      height: 300px;
+    }
+    .order-admin .admin-chat-box .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 10px;
+    }
+    .order-admin .admin-chat-box .chat-header h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .order-admin .admin-chat-box .chat-header .phone-label {
+      font-size: 12px;
+      color: #888;
+    }
+    .order-admin .admin-chat-box .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      max-height: 180px;
+      padding-right: 4px;
+    }
+    .order-admin .admin-chat-box .chat-messages .chat-bubble {
+      padding: 8px 14px;
+      border-radius: 16px;
+      max-width: 85%;
+      word-wrap: break-word;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .order-admin .admin-chat-box .chat-messages .chat-bubble.customer {
+      background: #2a2a3a;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      color: #e0e0e0;
+    }
+    .order-admin .admin-chat-box .chat-messages .chat-bubble.admin {
+      background: #f5a623;
+      color: #000;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .order-admin .admin-chat-box .chat-messages .empty-state {
+      color: #666;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 13px;
+    }
+    .order-admin .admin-chat-box .chat-input-row {
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 10px;
+    }
+    .order-admin .admin-chat-box .chat-input-row input {
+      flex: 1;
+      padding: 8px 14px;
+      background: #0d0d1a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 30px;
+      font-size: 13px;
+      color: #fff;
+      font-family: inherit;
+    }
+    .order-admin .admin-chat-box .chat-input-row input:focus {
+      border-color: #f5a623;
+      outline: none;
+    }
+    .order-admin .admin-chat-box .chat-input-row input::placeholder { color: #555; }
+    .order-admin .admin-chat-box .chat-input-row button {
+      background: #f5a623;
+      color: #000;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: 0.2s;
+    }
+    .order-admin .admin-chat-box .chat-input-row button:hover { background: #ffb347; }
+
+    /* ----- AGE GATE ----- */
+    .age-gate-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+      z-index: 200; display: none; justify-content: center; align-items: center;
+      padding: 24px; max-width: 480px; margin: 0 auto;
+    }
+    .age-gate-overlay.active { display: flex; }
+    .age-gate-card {
+      background: #1a1a2a; border-radius: 40px; padding: 40px 32px;
+      width: 100%; text-align: center; box-shadow: 0 32px 64px rgba(0,0,0,0.8);
+      animation: fadeInUp 0.4s cubic-bezier(0.34,1.2,0.64,1);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .age-gate-card h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; color: #fff; }
+    .age-gate-card p { color: #b0b0b0; margin-bottom: 28px; font-size: 15px; }
+    .age-gate-card .age-buttons { display: flex; gap: 14px; justify-content: center; }
+    .age-gate-card .age-btn {
+      padding: 14px 40px; border-radius: 60px; font-weight: 700; font-size: 16px;
+      border: none; cursor: pointer; font-family: inherit; transition: all 0.3s ease;
+      position: relative; overflow: hidden;
+    }
+    .age-gate-card .age-btn-yes { background: #f5a623; color: #000; }
+    .age-gate-card .age-btn-yes:hover { transform: scale(1.03); }
+    .age-gate-card .age-btn-no { background: #2a2a3a; color: #b0b0b0; }
+    .age-gate-card .age-btn-no:hover { background: #3a3a4a; }
+
+    /* ----- BOTTOM NAV ----- */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: #0d0d0d;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px) 0;
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+      transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+      will-change: transform;
+    }
+    .bottom-nav .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      color: #888;
+      font-size: 10px;
+      font-weight: 600;
+      transition: color 0.2s;
+      font-family: inherit;
+      position: relative;
+      flex: 1;
+    }
+    .bottom-nav .nav-item i { font-size: 22px; transition: color 0.2s; }
+    .bottom-nav .nav-item.active { color: #f5a623; }
+    .bottom-nav .nav-item.active i { color: #f5a623; }
+    .bottom-nav .nav-drag-handle {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 6px;
+      background: #444;
+      border-radius: 12px;
+      cursor: grab;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+    .bottom-nav .nav-drag-handle:hover { opacity: 0.8; }
+    .bottom-nav .nav-drag-handle:active { cursor: grabbing; }
+    .bottom-nav.snap-down { transform: translateY(100%); }
+    .bottom-nav.snap-up { transform: translateY(0); }
+
+    /* ----- RESPONSIVE ----- */
+    @media (max-width: 480px) {
+      .app-container { max-width: 100%; border-radius: 0; }
+      .bottom-nav { max-width: 100%; padding-bottom: env(safe-area-inset-bottom, 8px); }
+      .quick-action-card { flex: 0 0 120px; }
+      .service-card-uber { flex: 0 0 160px; }
+      .map-area { height: 160px; }
+      .big-icon { width: 80px; height: 80px; }
+      .big-icon .cube { width: 56px; height: 56px; }
+      .big-icon .cube-face { width: 56px; height: 56px; font-size: 0.5rem; border-radius: 8px; border-width: 1.5px; }
+      .big-icon .cube-face.front { transform: translateZ(28px); }
+      .big-icon .cube-face.back { transform: rotateY(180deg) translateZ(28px); }
+      .big-icon .cube-face.right { transform: rotateY(90deg) translateZ(28px); }
+      .big-icon .cube-face.left { transform: rotateY(-90deg) translateZ(28px); }
+      .big-icon .cube-face.top { transform: rotateX(90deg) translateZ(28px); }
+      .big-icon .cube-face.bottom { transform: rotateX(-90deg) translateZ(28px); }
+      .order-chat { height: 440px; }
+      .order-admin .admin-chat-box { height: 240px; }
+      .ai-container .chat-messages { height: 320px; }
+      .plan-card-large .plan-price { font-size: 28px; }
+    }
+
+    /* ----- UTILITY ----- */
+    .back-link {
+      color: #f5a623;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-block;
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .back-link i { margin-right: 6px; }
+    .back-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
-<div id="loading-overlay" class="loading-overlay hidden">
-  <div class="spinner"></div>
-  <p>Loading…</p>
-</div>
+  <!-- ===== SPINNER OVERLAY ===== -->
+  <div class="spinner-overlay" id="spinnerOverlay">
+    <div class="spinner-circle"></div>
+    <div class="spinner-text">Processing...</div>
+  </div>
 
-<div class="container" id="app">
+  <!-- ===== APP WRAPPER ===== -->
+  <div class="app-container" id="app">
 
-  <div id="auth-section">
-    <h1>🚚 FedPromptly</h1>
-    <div class="sub">Local delivery • South Florida</div>
-
-    <div id="auth-error" class="error"></div>
-    <div id="auth-success" class="success"></div>
-
-    <div id="login-form">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="login-email" placeholder="you@example.com" />
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" />
-      </div>
-      <button class="btn" id="login-btn">Log in</button>
-      <div class="toggle-link" id="show-signup">Don't have an account? Sign up</div>
+    <!-- ===== PROGRESS BAR ===== -->
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressBar"></div>
     </div>
 
-    <div id="signup-form" class="hidden">
-      <div class="form-group">
-        <label>Full name</label>
-        <input type="text" id="signup-name" placeholder="Jane Doe" />
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+      <div class="logo-small">FED<span>JUMPER</span></div>
+      <div class="header-actions">
+        <span class="discord-badge" id="discordBadge">
+          <span class="dot">●</span>
+          <span id="onlineCount">---</span>
+        </span>
+        <button class="ai-chat-btn" id="headerAiBtn" aria-label="AI Chat Assistant">
+          <i class="fas fa-robot"></i>
+          <span class="lock-icon" id="headerLockIcon"><i class="fas fa-lock"></i></span>
+          <span class="tooltip-text" id="headerTooltip">Subscribers only</span>
+        </button>
       </div>
-      <div class="form-group">
-        <label>Phone (optional)</label>
-        <input type="text" id="signup-phone" placeholder="(305) 555-1234" />
+    </header>
+
+    <!-- ===== LOCATION BAR ===== -->
+    <div class="location-bar">
+      <span class="loc-icon"><i class="fas fa-location-dot"></i></span>
+      <div class="loc-text">
+        <div class="main">South Florida</div>
+        <div class="sub">33426 · 33435 · 33436 · 33437</div>
       </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="signup-email" placeholder="you@example.com" />
+    </div>
+
+    <!-- ===== TAB CONTENT ===== -->
+    <main>
+
+      <!-- HOME -->
+      <div id="home" class="tab-content active">
+        <div class="map-area">
+          <div class="map-overlay"></div>
+          <div class="map-content fade-in">
+            <div class="big-icon">
+              <div class="cube-scene">
+                <div class="cube">
+                  <div class="cube-face front">F</div>
+                  <div class="cube-face back">B</div>
+                  <div class="cube-face right">R</div>
+                  <div class="cube-face left">L</div>
+                  <div class="cube-face top">T</div>
+                  <div class="cube-face bottom">Btm</div>
+                </div>
+              </div>
+            </div>
+            <h2>Secure · Anonymous · Fast</h2>
+            <p>Flat $5 delivery · Encrypted · Zero logs</p>
+          </div>
+        </div>
+
+        <div class="quick-actions stagger-list">
+          <div class="quick-action-card ripple" data-tab="order">
+            <div class="qa-icon"><i class="fas fa-box"></i></div>
+            <div class="qa-title">Order</div>
+            <div class="qa-sub">Place delivery</div>
+          </div>
+          <div class="quick-action-card ripple" data-tab="services">
+            <div class="qa-icon"><i class="fas fa-globe"></i></div>
+            <div class="qa-title">Services</div>
+            <div class="qa-sub">Explore</div>
+          </div>
+          <div class="quick-action-card ripple" data-tab="payment">
+            <div class="qa-icon"><i class="fas fa-credit-card"></i></div>
+            <div class="qa-title">Subscribe</div>
+            <div class="qa-sub">Plans</div>
+          </div>
+        </div>
+
+        <div class="section-header fade-in fade-in-delay-1">
+          <h3>Delivery options</h3>
+          <a data-tab="services">See all →</a>
+        </div>
+        <div class="service-scroll stagger-list">
+          <div class="service-card-uber ripple" data-tab="order">
+            <div class="sc-icon"><i class="fas fa-envelope"></i></div>
+            <div class="sc-title">Standard</div>
+            <div class="sc-desc">Up to 5 lbs</div>
+            <div class="sc-price"><span class="morph-number" data-value="5">$5</span> <small>flat</small></div>
+            <div class="sc-badge">popular</div>
+          </div>
+          <div class="service-card-uber ripple" data-tab="order">
+            <div class="sc-icon"><i class="fas fa-box"></i></div>
+            <div class="sc-title">Large</div>
+            <div class="sc-desc">Up to 20 lbs</div>
+            <div class="sc-price"><span class="morph-number" data-value="10">$10</span> <small>flat</small></div>
+          </div>
+          <div class="service-card-uber ripple" data-tab="order">
+            <div class="sc-icon"><i class="fas fa-bolt"></i></div>
+            <div class="sc-title">Express</div>
+            <div class="sc-desc">2‑hour window</div>
+            <div class="sc-price"><span class="morph-number" data-value="25">$25</span> <small>flat</small></div>
+            <div class="sc-badge">fast</div>
+          </div>
+          <div class="service-card-uber ripple" data-tab="order">
+            <div class="sc-icon"><i class="fas fa-user-secret"></i></div>
+            <div class="sc-title">Anonymous</div>
+            <div class="sc-desc">Zero‑log delivery</div>
+            <div class="sc-price"><span class="morph-number" data-value="5">$5</span> <small>flat</small></div>
+          </div>
+        </div>
+
+        <div class="fade-in fade-in-delay-2" style="margin: 8px 20px 20px; background: #1a1a2a; border-radius: 20px; padding: 16px 18px; border: 1px solid rgba(255,255,255,0.06);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-lock" style="color: #f5a623; font-size: 24px;"></i>
+            <div>
+              <div style="font-weight: 700; font-size: 15px; color: #fff;">End‑to‑end encrypted</div>
+              <div style="font-size: 13px; color: #b0b0b0;">All messages &amp; photos auto‑delete after delivery</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="signup-password" placeholder="••••••••" />
+
+      <!-- ORDER -->
+      <div id="order" class="tab-content">
+        <div class="order-container">
+          <!-- Customer View -->
+          <div id="order-customer-view">
+            <div class="order-header">
+              <h2>📦 Place Order</h2>
+              <span class="order-status" id="orderStatus">🔴 Offline</span>
+            </div>
+
+            <!-- Auth Forms -->
+            <div class="order-auth" id="orderAuth">
+              <div id="orderAuthError" class="error-box"></div>
+
+              <!-- Login Form -->
+              <form id="orderLoginForm">
+                <h3>Welcome Back</h3>
+                <p class="sub">Sign in to place your delivery order</p>
+                <div class="input-group">
+                  <label>Email</label>
+                  <input type="email" id="orderLoginEmail" placeholder="you@example.com" required />
+                </div>
+                <div class="input-group">
+                  <label>Password</label>
+                  <input type="password" id="orderLoginPassword" placeholder="••••••••" required />
+                </div>
+                <button type="submit" class="btn-primary">Sign In</button>
+                <div class="toggle-link">
+                  <span style="color:#888;">Don't have an account?</span>
+                  <button type="button" class="btn-secondary" id="orderShowSignup">Sign Up</button>
+                </div>
+              </form>
+
+              <!-- Signup Form -->
+              <form id="orderSignupForm" style="display:none;">
+                <h3>Create Account</h3>
+                <p class="sub">Get started with Fed Jumper</p>
+                <div class="input-group">
+                  <label>Email</label>
+                  <input type="email" id="orderSignupEmail" placeholder="you@example.com" required />
+                </div>
+                <div class="input-group">
+                  <label>Password</label>
+                  <input type="password" id="orderSignupPassword" placeholder="••••••••" required />
+                </div>
+                <button type="submit" class="btn-primary">Create Account</button>
+                <div class="toggle-link">
+                  <span style="color:#888;">Already have an account?</span>
+                  <button type="button" class="btn-secondary" id="orderShowLogin">Sign In</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Phone Collection -->
+            <div class="order-phone-modal" id="orderPhoneModal">
+              <h3>📱 Add Your Phone Number</h3>
+              <p class="sub">We need this to confirm your delivery details.</p>
+              <input type="tel" id="orderPhoneInput" placeholder="555-123-4567" />
+              <button class="btn-primary" id="orderSavePhone">Save & Continue</button>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="order-chat" id="orderChat">
+              <div class="chat-header">
+                <h4>💬 Delivery Chat</h4>
+                <button class="logout-btn" id="orderLogoutBtn">Logout</button>
+              </div>
+              <div class="chat-messages" id="orderMessages">
+                <div class="empty-state">No messages yet. Send a message below.</div>
+              </div>
+              <div class="chat-input-row">
+                <input type="text" id="orderChatInput" placeholder="Type a message..." />
+                <button id="orderSendBtn">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin View -->
+          <div class="order-admin" id="orderAdminView">
+            <div class="admin-header">
+              <h2>📊 Order Dashboard</h2>
+              <span class="admin-badge">🔑 Admin</span>
+            </div>
+            <div class="admin-body">
+              <div class="customer-list" id="orderCustomerList">
+                <div class="empty-state" style="color:#666; text-align:center; padding:20px 0;">No customers yet.</div>
+              </div>
+              <div class="admin-chat-box">
+                <div class="chat-header">
+                  <h4 id="orderAdminChatTitle">Select a customer</h4>
+                  <span class="phone-label" id="orderAdminPhoneLabel"></span>
+                </div>
+                <div class="chat-messages" id="orderAdminMessages">
+                  <div class="empty-state">Select a customer to view their messages.</div>
+                </div>
+                <div class="chat-input-row">
+                  <input type="text" id="orderAdminInput" placeholder="Type a reply..." disabled />
+                  <button id="orderAdminSendBtn" disabled>Reply</button>
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary" id="orderAdminLogout" style="margin-top:4px; padding:10px; font-size:14px;">Logout</button>
+          </div>
+        </div>
       </div>
-      <button class="btn" id="signup-btn">Create account</button>
-      <div class="toggle-link" id="show-login">Already have an account? Log in</div>
+
+      <!-- FAQ -->
+      <div id="faq" class="tab-content">
+        <div class="faq-list">
+          <span class="back-link ripple" data-tab="home"><i class="fas fa-arrow-left"></i> Back</span>
+          <h2 style="font-size: 24px; font-weight: 800; margin: 4px 0 16px; color: #fff;">FAQs</h2>
+
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">Is my identity really hidden? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">Yes. We never store your name, address, or contact details after delivery. All communications are encrypted and auto‑deleted within 24 hours.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">How do I know my package is secure? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">We use end‑to‑end encryption for all messages and photo proof. Your package is handled by vetted couriers with strict confidentiality agreements.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">What areas do you serve? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">Currently South Florida – ZIPs 33426, 33435, 33436, 33437. Expanding soon.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">How much does it cost? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">$5 flat fee per delivery – no hidden charges, no subscription.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">What is contactless delivery? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">Zero physical contact. We coordinate drop‑off locations, take encrypted photo proof, and all communication is ephemeral.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">Do you offer tracking? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">We provide real‑time updates via encrypted messages, but no permanent tracking logs are kept.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">How is payment handled? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">Payments appear as a generic service charge on your statement – no mention of Fed Jumper or delivery contents.</div>
+          </div>
+          <div class="faq-item-uber stagger-list" onclick="toggleFaq(this)">
+            <div class="faq-q">What is your refund policy? <i class="fas fa-chevron-down"></i></div>
+            <div class="faq-a">Delivery fee is non‑refundable once pickup is completed. If we fail to deliver, we refund in full.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEGAL -->
+      <div id="legal" class="tab-content">
+        <div class="legal-panel">
+          <span class="back-link ripple" data-tab="home"><i class="fas fa-arrow-left"></i> Back</span>
+          <h2 style="font-size: 24px; font-weight: 800; margin: 4px 0 16px; color: #fff;">Legal</h2>
+
+          <div class="legal-card fade-in fade-in-delay-1">
+            <h4>📋 Terms of Service</h4>
+            <p><strong>Effective:</strong> July 2026</p>
+            <p><strong>1. Service</strong> – Anonymous, encrypted courier delivery with no‑log policy.</p>
+            <p><strong>2. Privacy</strong> – No personal data stored. All data deleted within 24 hours.</p>
+            <p><strong>3. Encryption</strong> – All communications encrypted in transit.</p>
+            <p><strong>4. Fees</strong> – $5 flat rate, non‑refundable after pickup.</p>
+            <p><strong>5. Prohibited items</strong> – Illegal or hazardous items refused.</p>
+            <p><strong>6. Liability</strong> – Limited to the delivery fee paid.</p>
+            <p><strong>7. Governing law</strong> – Florida.</p>
+          </div>
+
+          <div class="legal-card fade-in fade-in-delay-2">
+            <h4>🔒 Privacy Policy</h4>
+            <p><strong>Data collected:</strong> Minimal – pickup/drop location, temporary contact.</p>
+            <p><strong>Retention:</strong> All data purged within 7 days. Photos/messages deleted after 24 hours.</p>
+            <p><strong>Sharing:</strong> We do not sell or share data.</p>
+            <p><strong>Your rights:</strong> Contact business@fedpromptly.com for deletion requests.</p>
+            <p><strong>Security:</strong> End‑to‑end encryption, secure servers.</p>
+          </div>
+          <div style="text-align:center; font-size:13px; color:#888; margin-top:8px;">Last updated: July 2026 · Fed Jumper LLC</div>
+        </div>
+      </div>
+
+      <!-- SERVICES -->
+      <div id="services" class="tab-content">
+        <div style="padding:12px 16px 0;">
+          <span class="back-link ripple" data-tab="home"><i class="fas fa-arrow-left"></i> Back</span>
+          <h2 style="font-size:22px; font-weight:800; margin:4px 0 12px; color: #fff;">Services</h2>
+        </div>
+
+        <div class="services-tabs" id="servicesTabs">
+          <button class="svc-tab active ripple" data-svc="encrypted-delivery"><i class="fas fa-user-secret"></i> Delivery</button>
+          <button class="svc-tab ripple" data-svc="interfednet"><i class="fas fa-globe"></i> Inter·FED·NET</button>
+          <button class="svc-tab ripple" data-svc="cpa"><i class="fas fa-chart-line"></i> FED‑CPA</button>
+          <button class="svc-tab ripple" data-svc="fedos"><i class="fas fa-hand-holding-heart"></i> FED·OS</button>
+          <button class="svc-tab ripple" data-svc="feduedu"><i class="fas fa-graduation-cap"></i> FED·EDU</button>
+        </div>
+
+        <div id="encrypted-delivery-pane" class="service-pane active-pane">
+          <div class="svc-card fade-in">
+            <h4>🔐 Encrypted Delivery</h4>
+            <div class="svc-meta">Zero‑log · End‑to‑end encryption · Auto‑purge</div>
+            <div class="stat-row">
+              <div class="stat-item"><div class="num morph-number" data-value="5">$5</div><div class="label">Standard</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="10">$10</div><div class="label">Large (20 lbs)</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="25">$25</div><div class="label">Express (2h)</div></div>
+            </div>
+            <p style="font-size:14px; color:#b0b0b0;">All communications encrypted, no personal data stored, discreet billing.</p>
+            <button class="cta-link ripple" data-tab="order">Request delivery →</button>
+          </div>
+        </div>
+
+        <div id="interfednet-pane" class="service-pane">
+          <div class="svc-card fade-in">
+            <h4>🌐 Inter·FED·NET</h4>
+            <div class="svc-meta">Sovereign internet – no monthly bill</div>
+            <div class="stat-row">
+              <div class="stat-item"><div class="num morph-number" data-value="28">28 Mbps</div><div class="label">↓ download</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="29">$29</div><div class="label">one‑time blueprint</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="0">$0/mo*</div><div class="label">uses existing phone plan</div></div>
+            </div>
+            <p style="font-size:14px; color:#b0b0b0;">Wired USB tethering, no public Wi‑Fi, physical parental control.</p>
+            <a href="https://theworldtrade.gumroad.com/l/jegcn" target="_blank" class="cta-link ripple">Get blueprint →</a>
+          </div>
+        </div>
+
+        <div id="cpa-pane" class="service-pane">
+          <div class="svc-card fade-in">
+            <h4>📊 FED‑CPA</h4>
+            <div class="svc-meta">90% rev share · Adblock immune</div>
+            <div class="stat-row">
+              <div class="stat-item"><div class="num morph-number" data-value="3.24M">3.24M</div><div class="label">impressions (30d)</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="247">247</div><div class="label">active publishers</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="312K">$312K</div><div class="label">total payouts</div></div>
+            </div>
+            <p style="font-size:14px; color:#b0b0b0;">PPV, PPC, CPA, CPL, Push, Native – all formats supported.</p>
+            <a href="https://www.fedpromptly.com/service/ad-network/fedsense/fedcpa" target="_blank" class="cta-link-outline ripple">Contact sales</a>
+          </div>
+        </div>
+
+        <div id="fedos-pane" class="service-pane">
+          <div class="svc-card fade-in">
+            <h4>🚀 FED·OS</h4>
+            <div class="svc-meta">Sovereign digital OS · 8 live modules</div>
+            <div class="stat-row">
+              <div class="stat-item"><div class="num morph-number" data-value="200+">200+</div><div class="label">daily visitors</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="100+">100+</div><div class="label">Ko‑fi members</div></div>
+              <div class="stat-item"><div class="num morph-number" data-value="380k">$380k</div><div class="label">year 2 projected revenue</div></div>
+            </div>
+            <p style="font-size:14px; color:#b0b0b0;">Investor proposal: $150K for 10% equity ($1.5M post‑money).</p>
+            <a href="https://www.gofundme.com/FEDOS" target="_blank" class="cta-link-outline ripple">Request term sheet</a>
+          </div>
+        </div>
+
+        <div id="feduedu-pane" class="service-pane">
+          <div class="svc-card fade-in">
+            <h4>🎓 FED·EDU</h4>
+            <div class="svc-meta">Free tech education for all ages</div>
+            <div class="stat-row">
+              <div class="stat-item"><div class="num">5-17</div><div class="label">FED4Kids</div></div>
+              <div class="stat-item"><div class="num">45+</div><div class="label">FED‑ed</div></div>
+              <div class="stat-item"><div class="num">Under 75</div><div class="label">FEDU</div></div>
+            </div>
+            <p style="font-size:14px; color:#b0b0b0;">Complete a free course → get 6 months of high‑speed internet (parental consent required).</p>
+            <a href="https://www.fedpromptly.com/service/education" target="_blank" class="cta-link ripple">Claim offer →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI -->
+      <div id="ai" class="tab-content">
+        <div class="ai-container" style="position: relative; padding: 20px;">
+          <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 4px; color: #fff;">🤖 Delivery AI</h2>
+          <p style="color: #b0b0b0; margin-bottom: 20px;">Ask me about delivery, pricing, or privacy. I'm here 24/7.</p>
+          <div class="chat-messages" id="aiMessages">
+            <div class="chat-msg bot">
+              <div class="avatar"><i class="fas fa-robot"></i></div>
+              <div class="bubble">Hi! I'm your AI assistant. How can I help you today?</div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <input type="text" id="aiUserInput" placeholder="Ask something..." autocomplete="off">
+            <button id="aiSendBtn" class="ripple"><i class="fas fa-paper-plane"></i></button>
+          </div>
+          <div class="chat-suggestions">
+            <button class="chip ai-chip ripple" data-question="I need a package delivered ASAP. Pickup: 33426, Drop: 33435.">📦 Urgent</button>
+            <button class="chip ai-chip ripple" data-question="How do you ensure anonymity?">🔒 Privacy</button>
+            <button class="chip ai-chip ripple" data-question="What are your delivery options?">📋 Options</button>
+          </div>
+          <div id="aiLockOverlay">
+            <i class="fas fa-lock"></i>
+            <h3>Subscribers Only</h3>
+            <p>Unlock the AI Chat Assistant to get personalized delivery recommendations and priority support.</p>
+            <button class="cta-link" onclick="switchTab('payment')">View Subscription Plans</button>
+            <p class="sub-text">Already subscribed? <a id="activateAiFromTab">Click here to activate</a></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAYMENT TAB (redesigned with large vertical plans) ===== -->
+      <div id="payment" class="tab-content">
+        <div class="payment-panel">
+          <span class="back-link ripple" data-tab="home"><i class="fas fa-arrow-left"></i> Back</span>
+          <h2 style="font-size:24px; font-weight:800; margin:4px 0 4px; color: #fff;">💳 Subscribe</h2>
+          <p style="color:#b0b0b0; margin-bottom:20px;">Choose your plan below. All payments are discreet.</p>
+
+          <!-- Plan Cards (3 tiers, large vertical) -->
+          <div class="plan-cards" id="planCards">
+            <!-- Starter -->
+            <div class="plan-card-large" data-plan="starter">
+              <div class="plan-check"><i class="fas fa-check-circle"></i></div>
+              <div class="plan-top">
+                <div class="plan-name">Starter</div>
+                <div class="plan-badge">monthly</div>
+              </div>
+              <div class="plan-price">$9 <small>/mo</small></div>
+              <div class="plan-features">
+                <i class="fas fa-check"></i> Unlimited standard deliveries<br>
+                <i class="fas fa-check"></i> Encrypted messaging<br>
+                <i class="fas fa-check"></i> Photo proof
+              </div>
+              <button class="plan-btn ripple">Choose Starter</button>
+            </div>
+
+            <!-- Pro (best value) -->
+            <div class="plan-card-large" data-plan="pro" style="border-color: #f5a623;">
+              <div class="plan-check"><i class="fas fa-check-circle"></i></div>
+              <div class="plan-top">
+                <div class="plan-name">Pro</div>
+                <div class="plan-badge" style="background:#f5a623; color:#000;">best value</div>
+              </div>
+              <div class="plan-price">$19 <small>/mo</small></div>
+              <div class="plan-features">
+                <i class="fas fa-check"></i> Everything in Starter<br>
+                <i class="fas fa-check"></i> Express deliveries (2h)<br>
+                <i class="fas fa-check"></i> Priority support<br>
+                <i class="fas fa-check"></i> AI assistant access
+              </div>
+              <button class="plan-btn ripple" style="background:#f5a623;">Choose Pro</button>
+            </div>
+
+            <!-- Enterprise (new 3rd tier) -->
+            <div class="plan-card-large" data-plan="enterprise">
+              <div class="plan-check"><i class="fas fa-check-circle"></i></div>
+              <div class="plan-top">
+                <div class="plan-name">Enterprise</div>
+                <div class="plan-badge">premium</div>
+              </div>
+              <div class="plan-price">$49 <small>/mo</small></div>
+              <div class="plan-features">
+                <i class="fas fa-check"></i> Everything in Pro<br>
+                <i class="fas fa-check"></i> Unlimited express deliveries<br>
+                <i class="fas fa-check"></i> Dedicated account manager<br>
+                <i class="fas fa-check"></i> Custom integration support<br>
+                <i class="fas fa-check"></i> White‑glove delivery
+              </div>
+              <button class="plan-btn ripple">Choose Enterprise</button>
+            </div>
+          </div>
+
+          <!-- Selected plan indicator -->
+          <div class="selected-plan-label" id="selectedPlanLabel">You selected: <span id="selectedPlanName"></span></div>
+
+          <!-- Secret payment methods (hidden until a plan is clicked) -->
+          <div class="payment-methods-hidden" id="paymentMethodsHidden">
+            <!-- AI activation card (demo) -->
+            <div class="pay-card" style="border: 2px solid #f5a623; background: #1a1a2a; margin-bottom: 20px;">
+              <h4>🤖 Unlock AI Chat Assistant</h4>
+              <p style="font-size: 14px; color: #b0b0b0; margin-bottom: 16px;">Demo: Click the button below to simulate a subscription and unlock the AI chat feature.</p>
+              <button class="cta-link ripple" id="activateAiBtn" style="background: #f5a623; color:#000; border: 2px solid #f5a623;">✅ Activate AI Access</button>
+            </div>
+
+            <!-- Payment methods -->
+            <div class="pay-card fade-in fade-in-delay-1">
+              <h4><i class="fab fa-venmo" style="color:#1A8CFF;"></i> Venmo</h4>
+              <a href="https://account.venmo.com/u/Viraldancando" target="_blank" class="pay-btn venmo ripple"><i class="fab fa-venmo"></i> Pay with Venmo</a>
+            </div>
+            <div class="pay-card fade-in fade-in-delay-2">
+              <h4><i class="fab fa-paypal" style="color:#0070ba;"></i> PayPal</h4>
+              <div class="paypal-container" id="paypal-button-container"></div>
+            </div>
+            <div class="pay-card fade-in fade-in-delay-3">
+              <h4><i class="fas fa-credit-card" style="color:#635BFF;"></i> Stripe (Card)</h4>
+              <stripe-buy-button
+              buy-button-id="buy_btn_1TqoW5LSIB6IjFRXK9UsvpAT"
+              publishable-key="pk_live_51TKTF4LSIB6IjFRX3lKiYl3vVLCiphsZluzPsi9Zzz4Dxs1AxXqn2tQXwpXlKuzP2ePkXIn45BoqkVRsSVhSczkk00EhKZvS83">
+            </stripe-buy-button>
+          </div>
+          <div class="pay-card fade-in fade-in-delay-4">
+            <h4><i class="fas fa-bolt" style="color:#635BFF;"></i> Stripe Checkout</h4>
+            <a href="https://donate.stripe.com/cNi28s3SGdRr5ps81E6c000" target="_blank" class="pay-btn stripe ripple"><i class="fas fa-bolt"></i> Checkout</a>
+          </div>
+          <p id="result-message" style="text-align:center; color:#f5a623; font-weight:600; margin-top:8px;"></p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <div class="nav-drag-handle" id="navDragHandle"></div>
+    <button class="nav-item active" data-tab="home"><i class="fas fa-home"></i><span>Home</span></button>
+    <button class="nav-item" data-tab="order"><i class="fas fa-box"></i><span>Order</span></button>
+    <button class="nav-item" data-tab="services"><i class="fas fa-th-large"></i><span>Services</span></button>
+    <button class="nav-item" data-tab="ai"><i class="fas fa-robot"></i><span>AI</span></button>
+    <button class="nav-item" data-tab="payment"><i class="fas fa-credit-card"></i><span>Subscribe</span></button>
+  </nav>
+
+  <!-- ===== AGE GATE ===== -->
+  <div class="age-gate-overlay" id="ageGate">
+    <div class="age-gate-card">
+      <h2>🔞 Age verification</h2>
+      <p>You must be 18 or older to view subscription options. Please confirm your age.</p>
+      <div class="age-buttons">
+        <button class="age-btn age-btn-yes ripple" id="ageYes">Yes, I'm 18+</button>
+        <button class="age-btn age-btn-no ripple" id="ageNo">No</button>
+      </div>
     </div>
   </div>
 
-  <div id="dashboard-section" class="hidden">
-    <div class="dash-header">
-      <div>
-        <h2 id="dash-welcome">Hello, 👋</h2>
-        <span class="role-badge" id="role-badge">customer</span>
-      </div>
-      <button class="logout-btn" id="logout-btn">Logout</button>
-    </div>
-
-    <div id="dash-error" class="error"></div>
-    <div id="dash-success" class="success"></div>
-
-    <div id="admin-controls" class="admin-controls hidden">
-      <label for="customer-filter">💬 Chat with customer</label>
-      <select id="customer-filter">
-        <option value="">-- All customers --</option>
-      </select>
-    </div>
-
-    <div class="message-area" id="message-area">
-      <div class="empty-state">No messages yet.</div>
-    </div>
-
-    <div class="compose">
-      <textarea id="msg-input" placeholder="Type a message…" rows="1"></textarea>
-      <button class="btn" id="send-btn">Send</button>
-    </div>
-    <p style="font-size:0.7rem;color:#999;margin-top:6px;text-align:right;">
-      Customers see only their messages • You see all
-    </p>
-  </div>
 </div>
 
-<!-- Phone number modal -->
-<div id="phone-modal" class="modal-overlay hidden">
-  <div class="modal">
-    <h3>📱 Phone Number Required</h3>
-    <p>Please provide your phone number for delivery updates, or text <strong>954-871-0397</strong> for assistance.</p>
-    <div class="form-group">
-      <label for="modal-phone">Your phone number</label>
-      <input type="text" id="modal-phone" placeholder="(305) 555-1234" />
-    </div>
-    <div class="btn-group">
-      <button class="btn" id="modal-save-phone">Save</button>
-      <button class="btn btn-close" id="modal-close">Skip</button>
-    </div>
-    <div id="modal-error" class="error" style="margin-top:10px;"></div>
-  </div>
-</div>
+<!-- ===== SCRIPTS ===== -->
+<script async src="https://js.stripe.com/v3/buy-button.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AaZIURGHfoVL0seNGmKhkm3_piU1UERhw7N4TaWhA8DIRRfxZ383l5QqVbyBHfsrB1Hz3H589vd1ZcpI&buyer-country=US&currency=USD&components=buttons&enable-funding=venmo,paylater,card" data-sdk-integration-source="developer-studio">
+</script>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
+<script type="module">
+  // ============================================================
+  //  SUPABASE CONFIG (shared with existing app)
+  // ============================================================
+  const SUPABASE_URL = 'https://fwxywuobrjialbqwvxrb.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_V-egUjkR1DXVqRXWFGFPdQ_f9K7SJnu';
+  const ADMIN_EMAIL = 'Hungbbcllc@gmail.com';
 
-    console.log('DOM loaded – initializing FedPromptly');
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    if (typeof window.supabase === 'undefined') {
-      alert('Supabase client failed to load. Check your internet connection or CDN.');
-      console.error('Supabase client not found!');
+  console.log('🔵 Supabase client initialized');
+
+  // ============================================================
+  //  DOM REFS
+  // ============================================================
+  const loaderOverlay = document.getElementById('spinnerOverlay');
+
+  function showLoading(show) {
+    if (show) loaderOverlay.classList.add('active');
+    else loaderOverlay.classList.remove('active');
+  }
+
+  // ============================================================
+  //  EXISTING APP FUNCTIONS (progress, ripple, etc.)
+  // ============================================================
+  const progressBar = document.getElementById('progressBar');
+
+  function startProgress() {
+    progressBar.className = 'progress-bar-fill loading';
+  }
+
+  function finishProgress() {
+    progressBar.className = 'progress-bar-fill done';
+    setTimeout(() => {
+      progressBar.className = 'progress-bar-fill';
+      progressBar.style.width = '0%';
+    }, 800);
+  }
+
+  // Ripple effect (already in DOM, just keep)
+  document.addEventListener('click', function(e) {
+    const target = e.target.closest('.ripple');
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple-effect';
+    ripple.style.width = size + 'px';
+    ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    const bg = getComputedStyle(target).backgroundColor;
+    const rgb = bg.match(/\d+/g);
+    if (rgb) {
+      const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+      ripple.classList.add(brightness < 128 ? 'white' : 'dark');
+    } else {
+      ripple.classList.add('dark');
+    }
+    target.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 700);
+  });
+
+  // ============================================================
+  //  TAB SWITCHING (shared)
+  // ============================================================
+  function switchTab(tabId) {
+    if (!tabId) return;
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(tabId);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.tab === tabId);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (tabId === 'payment') {
+      const ageGate = document.getElementById('ageGate');
+      const ageVerified = localStorage.getItem('fed_age_verified') === 'true';
+      if (!ageVerified) {
+        ageGate.classList.add('active');
+        // Payment methods will be shown only after age verification and plan selection
+      } else {
+        ageGate.classList.remove('active');
+        // If age already verified, we might auto-show payment methods? We'll keep them hidden until plan click.
+      }
+    }
+    startProgress();
+    setTimeout(finishProgress, 600);
+  }
+
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
+    btn.addEventListener('click', () => { const tab = btn.dataset.tab; if (tab) switchTab(tab); });
+  });
+  document.querySelectorAll('.quick-action-card[data-tab]').forEach(card => {
+    card.addEventListener('click', () => { const tab = card.dataset.tab; if (tab) switchTab(tab); });
+  });
+  document.querySelectorAll('.service-card-uber[data-tab]').forEach(card => {
+    card.addEventListener('click', () => { const tab = card.dataset.tab; if (tab) switchTab(tab); });
+  });
+  document.querySelectorAll('a[data-tab]').forEach(link => {
+    link.addEventListener('click', (e) => { e.preventDefault(); const tab = link.dataset.tab; if (tab) switchTab(
+        tab); });
+  });
+  document.querySelectorAll('.back-link[data-tab]').forEach(link => {
+    link.addEventListener('click', () => { const tab = link.dataset.tab; if (tab) switchTab(tab); });
+  });
+  document.querySelectorAll('.cta-link[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => { const tab = btn.dataset.tab; if (tab) switchTab(tab); });
+  });
+
+  // ============================================================
+  //  FAQ TOGGLE
+  // ============================================================
+  window.toggleFaq = function(el) {
+    el.classList.toggle('active');
+  };
+
+  // ============================================================
+  //  DISCORD ONLINE COUNT
+  // ============================================================
+  async function fetchDiscordOnline() {
+    try {
+      const res = await fetch('https://discord.com/api/guilds/1400235929154879490/widget.json');
+      const data = await res.json();
+      document.getElementById('onlineCount').innerText = data.presence_count || 0;
+    } catch { document.getElementById('onlineCount').innerText = '?'; }
+  }
+  fetchDiscordOnline();
+  setInterval(fetchDiscordOnline, 45000);
+
+  // ============================================================
+  //  PAYPAL BUTTON
+  // ============================================================
+  function renderPayPalButton() {
+    if (typeof paypal !== 'undefined') {
+      paypal.Buttons({
+        createOrder: (data, actions) => actions.order.create({ purchase_units: [{ amount: { value: '10.00' } }] }),
+        onApprove: (data, actions) => actions.order.capture().then(details => {
+          document.getElementById('result-message').innerHTML = '✅ PayPal completed by ' + details.payer
+            .name.given_name;
+        }),
+        onError: (err) => { document.getElementById('result-message').innerHTML = '❌ PayPal error: ' + err
+            .message; }
+      }).render('#paypal-button-container');
+    } else {
+      setTimeout(renderPayPalButton, 500);
+    }
+  }
+  if (document.getElementById('paypal-button-container')) renderPayPalButton();
+
+  // ============================================================
+  //  AGE GATE
+  // ============================================================
+  document.getElementById('ageYes').addEventListener('click', function() {
+    localStorage.setItem('fed_age_verified', 'true');
+    document.getElementById('ageGate').classList.remove('active');
+    // After age verification, we don't auto-show payment methods; they'll appear on plan click.
+    // But we need to keep the state so that plan click works.
+  });
+  document.getElementById('ageNo').addEventListener('click', function() {
+    alert('You must be 18 or older to view subscription options.');
+  });
+
+  // ============================================================
+  //  SERVICES SUB-TABS
+  // ============================================================
+  const svcTabs = document.querySelectorAll('.svc-tab');
+  const svcPanes = {
+    'encrypted-delivery': document.getElementById('encrypted-delivery-pane'),
+    'interfednet': document.getElementById('interfednet-pane'),
+    'cpa': document.getElementById('cpa-pane'),
+    'fedos': document.getElementById('fedos-pane'),
+    'feduedu': document.getElementById('feduedu-pane')
+  };
+  svcTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      const svc = this.dataset.svc;
+      svcTabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      Object.values(svcPanes).forEach(p => { if (p) p.classList.remove('active-pane'); });
+      if (svcPanes[svc]) svcPanes[svc].classList.add('active-pane');
+      startProgress();
+      setTimeout(finishProgress, 500);
+    });
+  });
+
+  // ============================================================
+  //  AI TAB LOGIC
+  // ============================================================
+  let isSubscriber = false;
+
+  function toggleSubscriberStatus(status) {
+    isSubscriber = status;
+    const headerBtn = document.getElementById('headerAiBtn');
+    const lockIcon = document.getElementById('headerLockIcon');
+    const tooltip = document.getElementById('headerTooltip');
+    if (isSubscriber) {
+      headerBtn.classList.add('unlocked');
+      tooltip.textContent = 'AI Chat Active';
+    } else {
+      headerBtn.classList.remove('unlocked');
+      tooltip.textContent = 'Subscribers only';
+    }
+    const overlay = document.getElementById('aiLockOverlay');
+    if (overlay) {
+      if (isSubscriber) overlay.classList.remove('active');
+      else overlay.classList.add('active');
+    }
+  }
+  toggleSubscriberStatus(false);
+
+  document.getElementById('headerAiBtn').addEventListener('click', () => switchTab('ai'));
+
+  document.getElementById('activateAiBtn').addEventListener('click', function() {
+    toggleSubscriberStatus(true);
+    showLoading(true);
+    startProgress();
+    setTimeout(() => {
+      showLoading(false);
+      finishProgress();
+      alert('🎉 AI Chat activated! You now have access.');
+    }, 1500);
+  });
+
+  document.getElementById('activateAiFromTab').addEventListener('click', function() {
+    toggleSubscriberStatus(true);
+    alert('🎉 AI Chat activated!');
+  });
+
+  // AI chat messages
+  const aiMessages = document.getElementById('aiMessages');
+  const aiUserInput = document.getElementById('aiUserInput');
+  const aiSendBtn = document.getElementById('aiSendBtn');
+  const aiChips = document.querySelectorAll('.ai-chip');
+
+  function addAIMessage(text, isUser) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-msg ' + (isUser ? 'user' : 'bot');
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.innerHTML = isUser ? '👤' : '<i class="fas fa-robot"></i>';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = text;
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(bubble);
+    aiMessages.appendChild(msgDiv);
+    aiMessages.scrollTop = aiMessages.scrollHeight;
+  }
+
+  function sendAIMessage() {
+    const msg = aiUserInput.value.trim();
+    if (!msg) return;
+    addAIMessage(msg, true);
+    aiUserInput.value = '';
+    showLoading(true);
+    startProgress();
+    setTimeout(() => {
+      let reply = 'Thank you! Our team will respond within 24 hours with encrypted details.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('urgent') || lower.includes('asap')) {
+        reply = 'We prioritize urgent requests. Please provide pickup/drop zip codes.';
+      } else if (lower.includes('privacy') || lower.includes('anonymous')) {
+        reply = 'We never store personal data. All communications are encrypted and auto‑deleted.';
+      } else if (lower.includes('package') || lower.includes('deliver')) {
+        reply = 'Please specify size and weight. Standard (≤5 lbs) $5, Large (≤20 lbs) $10, Express $25.';
+      }
+      addAIMessage(reply, false);
+      showLoading(false);
+      finishProgress();
+    }, 800);
+  }
+
+  aiSendBtn.addEventListener('click', sendAIMessage);
+  aiUserInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendAIMessage(); });
+  aiChips.forEach(chip => {
+    chip.addEventListener('click', function() {
+      const q = this.dataset.question;
+      if (q) { aiUserInput.value = q;
+        sendAIMessage(); }
+    });
+  });
+
+  // ============================================================
+  //  PAYMENT TAB – PLAN SELECTION & SECRET TAB REVEAL
+  // ============================================================
+  const planCards = document.querySelectorAll('.plan-card-large');
+  const paymentMethodsHidden = document.getElementById('paymentMethodsHidden');
+  const selectedPlanLabel = document.getElementById('selectedPlanLabel');
+  const selectedPlanName = document.getElementById('selectedPlanName');
+
+  // Function to reveal payment methods after age verification and plan selection
+  function revealPaymentMethods(planName) {
+    // Check age verification
+    const ageVerified = localStorage.getItem('fed_age_verified') === 'true';
+    if (!ageVerified) {
+      document.getElementById('ageGate').classList.add('active');
+      return; // age gate will handle the rest
+    }
+    // If age verified, show payment methods
+    paymentMethodsHidden.classList.add('visible');
+    selectedPlanLabel.classList.add('visible');
+    selectedPlanName.textContent = planName;
+    // Scroll to payment methods
+    setTimeout(() => {
+      paymentMethodsHidden.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  planCards.forEach(card => {
+    card.addEventListener('click', function(e) {
+      // If click is on the button, we handle separately, but we want the whole card clickable.
+      // Prevent double firing if button inside.
+      if (e.target.closest('.plan-btn')) return;
+      const plan = this.dataset.plan;
+      const name = this.querySelector('.plan-name').textContent;
+      // Deselect all
+      planCards.forEach(c => c.classList.remove('selected'));
+      this.classList.add('selected');
+      revealPaymentMethods(name);
+    });
+
+    // Also handle button click
+    const btn = card.querySelector('.plan-btn');
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const card = this.closest('.plan-card-large');
+      const plan = card.dataset.plan;
+      const name = card.querySelector('.plan-name').textContent;
+      planCards.forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      revealPaymentMethods(name);
+    });
+  });
+
+  // If age is already verified and user clicks a plan, it will work.
+  // If they click a plan and age is not verified, the age gate pops up.
+  // After age verification, we need to re-trigger the plan selection.
+  // We'll listen for age verification completion and re-trigger if a plan was selected.
+  let pendingPlanSelection = null;
+
+  // Override ageYes to re-trigger after verification
+  const originalAgeYes = document.getElementById('ageYes').click;
+  document.getElementById('ageYes').addEventListener('click', function() {
+    // After setting verified, check if there's a selected plan
+    const selectedCard = document.querySelector('.plan-card-large.selected');
+    if (selectedCard) {
+      const name = selectedCard.querySelector('.plan-name').textContent;
+      revealPaymentMethods(name);
+    }
+  });
+
+  // Also when switching to payment tab, if a plan is already selected and age verified, show payment methods
+  // We'll check on tab switch
+  const originalSwitchTab = switchTab;
+  switchTab = function(tabId) {
+    originalSwitchTab(tabId);
+    if (tabId === 'payment') {
+      const selectedCard = document.querySelector('.plan-card-large.selected');
+      const ageVerified = localStorage.getItem('fed_age_verified') === 'true';
+      if (selectedCard && ageVerified) {
+        const name = selectedCard.querySelector('.plan-name').textContent;
+        revealPaymentMethods(name);
+      } else if (!ageVerified) {
+        // Age gate will show, but we don't auto-show payment methods
+      }
+    }
+  };
+
+  // ============================================================
+  //  ORDER TAB – FULL EMBED (using same Supabase client)
+  // ============================================================
+  // DOM refs for order tab
+  const orderAuth = document.getElementById('orderAuth');
+  const orderLoginForm = document.getElementById('orderLoginForm');
+  const orderSignupForm = document.getElementById('orderSignupForm');
+  const orderAuthError = document.getElementById('orderAuthError');
+  const orderPhoneModal = document.getElementById('orderPhoneModal');
+  const orderChat = document.getElementById('orderChat');
+  const orderMessages = document.getElementById('orderMessages');
+  const orderChatInput = document.getElementById('orderChatInput');
+  const orderSendBtn = document.getElementById('orderSendBtn');
+  const orderLogoutBtn = document.getElementById('orderLogoutBtn');
+  const orderStatus = document.getElementById('orderStatus');
+  const orderAdminView = document.getElementById('orderAdminView');
+  const orderCustomerList = document.getElementById('orderCustomerList');
+  const orderAdminMessages = document.getElementById('orderAdminMessages');
+  const orderAdminInput = document.getElementById('orderAdminInput');
+  const orderAdminSendBtn = document.getElementById('orderAdminSendBtn');
+  const orderAdminChatTitle = document.getElementById('orderAdminChatTitle');
+  const orderAdminPhoneLabel = document.getElementById('orderAdminPhoneLabel');
+  const orderAdminLogout = document.getElementById('orderAdminLogout');
+
+  let currentUser = null;
+  let currentProfile = null;
+  let isAdmin = false;
+  let selectedUserId = null;
+  let allUsers = [];
+  let messageChannel = null;
+
+  function showOrderError(msg) {
+    orderAuthError.textContent = msg;
+    orderAuthError.style.display = 'block';
+    showLoading(false);
+  }
+
+  function hideOrderError() {
+    orderAuthError.style.display = 'none';
+  }
+
+  // Toggle auth forms
+  document.getElementById('orderShowSignup').addEventListener('click', () => {
+    orderLoginForm.style.display = 'none';
+    orderSignupForm.style.display = 'flex';
+    hideOrderError();
+  });
+  document.getElementById('orderShowLogin').addEventListener('click', () => {
+    orderSignupForm.style.display = 'none';
+    orderLoginForm.style.display = 'flex';
+    hideOrderError();
+  });
+
+  // Login
+  orderLoginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showLoading(true);
+    startProgress();
+    const email = document.getElementById('orderLoginEmail').value;
+    const password = document.getElementById('orderLoginPassword').value;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { showOrderError(error.message); return; }
+      hideOrderError();
+    } catch (err) { showOrderError('Unexpected error: ' + err.message); }
+  });
+
+  // Signup
+  orderSignupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showLoading(true);
+    startProgress();
+    const email = document.getElementById('orderSignupEmail').value;
+    const password = document.getElementById('orderSignupPassword').value;
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) { showOrderError(error.message); return; }
+      hideOrderError();
+    } catch (err) { showOrderError('Unexpected error: ' + err.message); }
+  });
+
+  // Save phone (UPSERT)
+  document.getElementById('orderSavePhone').addEventListener('click', async () => {
+    const phone = document.getElementById('orderPhoneInput').value.trim();
+    if (!phone) return alert('Please enter a phone number.');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, email: user.email, phone_number: phone }, { onConflict: 'id' });
+    if (error) return alert('Error saving phone: ' + error.message);
+    orderPhoneModal.classList.remove('active');
+    await loadOrderDashboard(user);
+  });
+
+  // Logout from order chat
+  orderLogoutBtn.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+  orderAdminLogout.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  // Subscribe to realtime messages
+  function subscribeToOrderMessages(callback) {
+    if (messageChannel) {
+      supabase.removeChannel(messageChannel);
+    }
+    messageChannel = supabase
+      .channel('order-messages-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        callback(payload.new);
+      })
+      .subscribe();
+  }
+
+  // Load messages for customer
+  async function loadCustomerMessages(userId) {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) return console.error(error);
+    if (!data || data.length === 0) {
+      orderMessages.innerHTML = `<div class="empty-state">No messages yet. Send a message below.</div>`;
       return;
     }
+    orderMessages.innerHTML = data.map(msg => `
+        <div class="chat-bubble ${msg.sender_type === 'admin' ? 'admin' : 'customer'}">
+          ${msg.message_text}
+          <span class="time">${new Date(msg.created_at).toLocaleTimeString()}</span>
+        </div>
+      `).join('');
+    orderMessages.scrollTop = orderMessages.scrollHeight;
+  }
 
-    const SUPABASE_URL = 'https://fwxywuobrjialbqwvxrb.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_V-egUjkR1DXVqRXWFGFPdQ_f9K7SJnu';
+  // Send customer message
+  async function sendCustomerMessage() {
+    const text = orderChatInput.value.trim();
+    if (!text) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('messages').insert({
+      user_id: user.id,
+      message_text: text,
+      sender_type: 'customer'
+    });
+    orderChatInput.value = '';
+    await loadCustomerMessages(user.id);
+    // Re-add system message
+    addSystemMessage();
+  }
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase client initialized');
+  function addSystemMessage() {
+    const existing = orderMessages.querySelectorAll('.chat-bubble.system');
+    existing.forEach(el => el.remove());
+    const sys = document.createElement('div');
+    sys.className = 'chat-bubble system';
+    sys.textContent = '👋 Hello! Please reply with your phone number so we can reach you faster regarding your deliveries.';
+    orderMessages.appendChild(sys);
+    orderMessages.scrollTop = orderMessages.scrollHeight;
+  }
 
-    // ---------- ADMIN EMAIL ----------
-    const ADMIN_EMAIL = 'hungbbcllc@gmail.com';
+  orderSendBtn.addEventListener('click', sendCustomerMessage);
+  orderChatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendCustomerMessage(); });
 
-    const $ = (id) => document.getElementById(id);
-    const loadingOverlay = $('loading-overlay');
-    const authSection = $('auth-section');
-    const dashSection = $('dashboard-section');
-    const loginForm = $('login-form');
-    const signupForm = $('signup-form');
-    const loginBtn = $('login-btn');
-    const signupBtn = $('signup-btn');
-    const showSignup = $('show-signup');
-    const showLogin = $('show-login');
-    const logoutBtn = $('logout-btn');
-    const msgInput = $('msg-input');
-    const sendBtn = $('send-btn');
-    const messageArea = $('message-area');
-    const dashWelcome = $('dash-welcome');
-    const roleBadge = $('role-badge');
-    const adminControls = $('admin-controls');
-    const customerFilter = $('customer-filter');
-    const authError = $('auth-error');
-    const authSuccess = $('auth-success');
-    const dashError = $('dash-error');
-    const dashSuccess = $('dash-success');
+  // Admin: select customer
+  window.selectOrderCustomer = async function(userId) {
+    selectedUserId = userId;
+    document.querySelectorAll('#orderCustomerList .customer-item').forEach(el => el.classList.remove('active'));
+    const item = document.querySelector(`#orderCustomerList .customer-item[data-userid="${userId}"]`);
+    if (item) item.classList.add('active');
+    orderAdminInput.disabled = false;
+    orderAdminSendBtn.disabled = false;
+    const user = allUsers.find(u => u.id === userId);
+    orderAdminChatTitle.textContent = user?.email || 'Customer';
+    orderAdminPhoneLabel.textContent = user?.phone_number ? `📞 ${user.phone_number}` : '';
 
-    const phoneModal = $('phone-modal');
-    const modalPhone = $('modal-phone');
-    const modalSave = $('modal-save-phone');
-    const modalClose = $('modal-close');
-    const modalError = $('modal-error');
-
-    let currentUser = null;
-    let currentCustomerId = null;
-    let allCustomers = [];
-    let lastReminderTimestamp = 0;
-
-    // ---------- Loading overlay ----------
-    function showLoading() {
-      loadingOverlay.classList.remove('hidden');
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) return console.error(error);
+    if (!data || data.length === 0) {
+      orderAdminMessages.innerHTML = `<div class="empty-state">No messages from this customer yet.</div>`;
+      return;
     }
-    function hideLoading() {
-      loadingOverlay.classList.add('hidden');
+    orderAdminMessages.innerHTML = data.map(msg => `
+        <div class="chat-bubble ${msg.sender_type === 'admin' ? 'admin' : 'customer'}">
+          ${msg.message_text}
+          <span class="time">${msg.sender_type === 'admin' ? 'You' : 'Customer'} • ${new Date(msg.created_at).toLocaleTimeString()}</span>
+        </div>
+      `).join('');
+    orderAdminMessages.scrollTop = orderAdminMessages.scrollHeight;
+  };
+
+  // Admin send reply
+  orderAdminSendBtn.addEventListener('click', async () => {
+    const text = orderAdminInput.value.trim();
+    if (!text || !selectedUserId) return;
+    await supabase.from('messages').insert({
+      user_id: selectedUserId,
+      message_text: text,
+      sender_type: 'admin'
+    });
+    orderAdminInput.value = '';
+    window.selectOrderCustomer(selectedUserId);
+  });
+  orderAdminInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') orderAdminSendBtn.click(); });
+
+  // ============================================================
+  //  ORDER DASHBOARD LOADER
+  // ============================================================
+  async function loadOrderDashboard(user) {
+    if (!user) return;
+    currentUser = user;
+    showLoading(false);
+    finishProgress();
+
+    // Get profile
+    let { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      await supabase.from('profiles').upsert({ id: user.id, email: user.email }, { onConflict: 'id' });
+      profile = { id: user.id, email: user.email, phone_number: null };
+    } else if (error) {
+      console.error('Profile fetch error:', error);
+      return;
     }
+    currentProfile = profile;
+    isAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
-    function showError(el, msg) {
-      el.style.display = 'block';
-      el.textContent = msg;
-    }
-    function hideError(el) {
-      el.style.display = 'none';
-      el.textContent = '';
-    }
-    function showSuccess(el, msg) {
-      el.style.display = 'block';
-      el.textContent = msg;
-      setTimeout(() => { el.style.display = 'none'; }, 3000);
-    }
+    // Hide auth, show appropriate view
+    orderAuth.style.display = 'none';
 
-    function setAuthView(showLoginView) {
-      loginForm.classList.toggle('hidden', !showLoginView);
-      signupForm.classList.toggle('hidden', showLoginView);
-      hideError(authError);
-      hideError(authSuccess);
-    }
-
-    // ---------- System message ----------
-    async function sendSystemMessage(customerId, content) {
-      if (!customerId) return;
-      const { error } = await supabase
-        .from('messages')
-        .insert([{ customer_id: customerId, content, is_from_admin: true }]);
-      if (error) console.error('Failed to send system message:', error);
-      await loadMessages();
-    }
-
-    // ---------- Auth handlers ----------
-    async function handleSignUp() {
-      console.log('SignUp clicked');
-      const email = $('signup-email').value.trim();
-      const password = $('signup-password').value;
-      const full_name = $('signup-name').value.trim();
-      const phone = $('signup-phone').value.trim();
-
-      if (!email || !password || !full_name) {
-        return showError(authError, 'Please fill in name, email and password.');
-      }
-      hideError(authError);
-
-      showLoading();
-      try {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-          console.error('SignUp error:', error);
-          showError(authError, error.message);
-          hideLoading();
-          return;
-        }
-
-        // Determine role: if email matches admin email, set as admin
-        const role = (email === ADMIN_EMAIL) ? 'admin' : 'customer';
-
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{ id: data.user.id, email, full_name, phone, role }]);
-
-        if (profileError) {
-          console.error('Profile insert error:', profileError);
-          showError(authError, 'Account created but profile failed. Please contact support.');
-          hideLoading();
-          return;
-        }
-
-        showSuccess(authSuccess, 'Account created! Please log in.');
-        setAuthView(true);
-        $('login-email').value = email;
-        $('login-password').value = '';
-        hideLoading();
-      } catch (err) {
-        console.error(err);
-        showError(authError, 'Something went wrong. Please try again.');
-        hideLoading();
-      }
-    }
-
-    async function handleLogin() {
-      console.log('Login clicked');
-      const email = $('login-email').value.trim();
-      const password = $('login-password').value;
-      if (!email || !password) {
-        showError(authError, 'Enter email and password.');
-        return;
-      }
-      hideError(authError);
-
-      showLoading();
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          console.error('Login error:', error);
-          showError(authError, error.message);
-          hideLoading();
-        }
-        // On success, auth state change will handle dashboard and hide loading
-      } catch (err) {
-        console.error(err);
-        showError(authError, 'Something went wrong. Please try again.');
-        hideLoading();
-      }
-    }
-
-    async function handleLogout() {
-      console.log('Logout clicked');
-      await supabase.auth.signOut();
-    }
-
-    async function loadProfile(userId) {
-      const { data, error } = await supabase
+    if (isAdmin) {
+      // Admin view
+      orderCustomerList.innerHTML = '';
+      const { data: users, error: uErr } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
-      if (error || !data) {
-        console.error('Profile load error', error);
-        return null;
-      }
-      return data;
-    }
-
-    async function loadCustomers() {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('role', 'customer')
-        .order('full_name');
-      if (error) {
-        console.error(error);
-        return [];
-      }
-      return data;
-    }
-
-    function renderMessages(messages, currentUserId, isAdmin, selectedCustomerId) {
-      messageArea.innerHTML = '';
-      if (!messages || messages.length === 0) {
-        messageArea.innerHTML = '<div class="empty-state">No messages yet.</div>';
-        return;
-      }
-
-      const sorted = [...messages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-      for (const msg of sorted) {
-        const div = document.createElement('div');
-        div.className = 'msg';
-
-        const isCustomerSender = !msg.is_from_admin;
-
-        if (isCustomerSender) {
-          div.classList.add('customer-msg');
-        } else {
-          div.classList.add('admin-msg');
-        }
-
-        if (isAdmin && selectedCustomerId === null) {
-          const label = document.createElement('span');
-          label.className = 'customer-label';
-          const customer = allCustomers.find(c => c.id === msg.customer_id);
-          label.textContent = customer ? `${customer.full_name} (${customer.email})` : 'Unknown customer';
-          div.appendChild(label);
-        }
-
-        const contentSpan = document.createElement('span');
-        contentSpan.textContent = msg.content;
-        div.appendChild(contentSpan);
-
-        const meta = document.createElement('span');
-        meta.className = 'meta';
-        const date = new Date(msg.created_at);
-        meta.textContent = date.toLocaleString();
-        div.appendChild(meta);
-
-        messageArea.appendChild(div);
-      }
-      messageArea.scrollTop = messageArea.scrollHeight;
-    }
-
-    async function loadMessages() {
-      if (!currentUser) return;
-
-      const isAdmin = currentUser.role === 'admin';
-      let query = supabase.from('messages').select('*');
-
-      if (isAdmin && currentCustomerId) {
-        query = query.eq('customer_id', currentCustomerId);
-      } else if (!isAdmin) {
-        query = query.eq('customer_id', currentUser.id);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: true });
-      if (error) {
-        console.error(error);
-        showError(dashError, 'Failed to load messages.');
-        return;
-      }
-      hideError(dashError);
-      renderMessages(data || [], currentUser.id, isAdmin, currentCustomerId);
-    }
-
-    // ---------- Send message (with auto-reminder) ----------
-    async function sendMessage() {
-      console.log('Send message clicked');
-      const content = msgInput.value.trim();
-      if (!content) return;
-      if (!currentUser) return;
-
-      let customerId = currentUser.id;
-      const isAdmin = currentUser.role === 'admin';
-
-      if (isAdmin && currentCustomerId) {
-        customerId = currentCustomerId;
-      } else if (isAdmin && !currentCustomerId) {
-        if (allCustomers.length === 0) {
-          showError(dashError, 'No customers available.');
-          return;
-        }
-        customerId = allCustomers[0].id;
-        currentCustomerId = customerId;
-        customerFilter.value = customerId;
-      }
-
-      const payload = {
-        customer_id: customerId,
-        content: content,
-        is_from_admin: isAdmin
-      };
-
-      const { error } = await supabase.from('messages').insert([payload]);
-      if (error) {
-        console.error(error);
-        showError(dashError, 'Failed to send message.');
-        return;
-      }
-      msgInput.value = '';
-      hideError(dashError);
-
-      await loadMessages();
-
-      // Reminder for customers without phone
-      if (!isAdmin && currentUser && !currentUser.phone) {
-        const now = Date.now();
-        if (now - lastReminderTimestamp > 300000) {
-          lastReminderTimestamp = now;
-          await sendSystemMessage(
-            customerId,
-            "Reminder: Please add your phone number for delivery updates. Text 954-871-0397 for assistance."
-          );
+        .order('created_at', { ascending: false });
+      if (uErr) return console.error('Admin fetch error:', uErr);
+      allUsers = users || [];
+      if (allUsers.length === 0) {
+        orderCustomerList.innerHTML = `<div class="empty-state" style="color:#666; text-align:center; padding:20px 0;">No customers yet.</div>`;
+      } else {
+        orderCustomerList.innerHTML = allUsers.map(u => `
+            <div class="customer-item" data-userid="${u.id}" onclick="selectOrderCustomer('${u.id}')">
+              <div class="name">${u.email || 'No email'}</div>
+              <div class="phone">📞 ${u.phone_number || 'No phone'}</div>
+            </div>
+          `).join('');
+        // Select first
+        if (allUsers.length > 0) {
+          window.selectOrderCustomer(allUsers[0].id);
         }
       }
-
-      if (isAdmin && !currentCustomerId) {
-        await populateCustomerFilter();
-      }
-    }
-
-    async function populateCustomerFilter() {
-      const customers = await loadCustomers();
-      allCustomers = customers;
-      customerFilter.innerHTML = '<option value="">-- All customers --</option>';
-      customers.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = `${c.full_name} (${c.email})`;
-        customerFilter.appendChild(opt);
+      // Subscribe to new messages for admin
+      subscribeToOrderMessages((newMsg) => {
+        if (selectedUserId && newMsg.user_id === selectedUserId) {
+          window.selectOrderCustomer(selectedUserId);
+        }
       });
-      if (currentCustomerId) {
-        customerFilter.value = currentCustomerId;
+      orderAdminView.classList.add('active');
+      orderPhoneModal.classList.remove('active');
+      orderChat.classList.remove('active');
+      orderStatus.textContent = '🔑 Admin';
+      orderStatus.style.color = '#f5a623';
+    } else {
+      // Customer view
+      orderAdminView.classList.remove('active');
+      if (!profile.phone_number) {
+        orderPhoneModal.classList.add('active');
+        orderChat.classList.remove('active');
+        orderStatus.textContent = '📱 Add phone';
+        orderStatus.style.color = '#f5a623';
+        return;
       }
-    }
-
-    let subscription = null;
-
-    function subscribeToMessages() {
-      if (subscription) {
-        subscription.unsubscribe();
-        subscription = null;
-      }
-
-      subscription = supabase
-        .channel('public:messages')
-        .on('postgres_changes', 
-          { event: 'INSERT', schema: 'public', table: 'messages' },
-          () => { loadMessages(); }
-        )
-        .subscribe();
-    }
-
-    // ---------- Phone Modal ----------
-    function showPhoneModal() {
-      phoneModal.classList.remove('hidden');
-      modalPhone.value = '';
-      hideError(modalError);
-    }
-
-    function hidePhoneModal() {
-      phoneModal.classList.add('hidden');
-    }
-
-    async function savePhoneNumber() {
-      const phone = modalPhone.value.trim();
-      if (!phone) {
-        return showError(modalError, 'Please enter a phone number.');
-      }
-      hideError(modalError);
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ phone })
-        .eq('id', currentUser.id);
-
-      if (error) {
-        console.error('Update phone error:', error);
-        return showError(modalError, 'Failed to save. Please try again.');
-      }
-
-      currentUser.phone = phone;
-      hidePhoneModal();
-      showSuccess(dashSuccess, 'Phone number saved!');
-      await loadMessages();
-    }
-
-    // ---------- Dashboard Init ----------
-    async function initDashboard(user) {
-      console.log('Initializing dashboard for user:', user.email);
-      let profile = await loadProfile(user.id);
-      if (!profile) {
-        const full_name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
-        const email = user.email;
-        const role = (email === ADMIN_EMAIL) ? 'admin' : 'customer';
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([{ id: user.id, email, full_name, role }]);
-        if (insertError) {
-          console.error('Failed to create profile', insertError);
-          await supabase.auth.signOut();
-          return;
+      orderPhoneModal.classList.remove('active');
+      orderChat.classList.add('active');
+      orderStatus.textContent = '🟢 Online';
+      orderStatus.style.color = '#23a55a';
+      // Subscribe to new messages for this customer
+      subscribeToOrderMessages((newMsg) => {
+        if (newMsg.user_id === user.id) {
+          loadCustomerMessages(user.id);
+          // Re-add system message
+          addSystemMessage();
         }
-        profile = await loadProfile(user.id);
-        if (!profile) {
-          await supabase.auth.signOut();
-          return;
-        }
-      } else {
-        // If existing profile and email is admin but role not admin, update it
-        if (user.email === ADMIN_EMAIL && profile.role !== 'admin') {
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ role: 'admin' })
-            .eq('id', user.id);
-          if (updateError) {
-            console.error('Failed to update admin role:', updateError);
-          } else {
-            profile.role = 'admin';
-          }
-        }
-      }
-
-      currentUser = { ...user, ...profile };
-
-      authSection.classList.add('hidden');
-      dashSection.classList.remove('hidden');
-
-      dashWelcome.textContent = `Hello, ${currentUser.full_name || 'Driver'} 👋`;
-      roleBadge.textContent = currentUser.role;
-
-      if (currentUser.role === 'admin') {
-        adminControls.classList.remove('hidden');
-        await populateCustomerFilter();
-      } else {
-        adminControls.classList.add('hidden');
-        // Customer: welcome message
-        await sendSystemMessage(
-          currentUser.id,
-          "Welcome to FedPromptly! Please add your phone number for delivery updates."
-        );
-        if (!currentUser.phone) {
-          showPhoneModal();
-        }
-      }
-
-      await loadMessages();
-      subscribeToMessages();
-
-      hideLoading();
+      });
+      await loadCustomerMessages(user.id);
+      addSystemMessage();
     }
+  }
 
-    // Auth state listener
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event);
-      if (event === 'SIGNED_IN' && session) {
-        await initDashboard(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        currentUser = null;
-        currentCustomerId = null;
-        if (subscription) {
-          subscription.unsubscribe();
-          subscription = null;
-        }
-        authSection.classList.remove('hidden');
-        dashSection.classList.add('hidden');
-        setAuthView(true);
-        $('login-password').value = '';
-        $('signup-password').value = '';
-        hideError(dashError);
-        hideError(dashSuccess);
-        hidePhoneModal();
-        hideLoading();
-      }
-    });
-
-    // Event listeners
-    loginBtn.addEventListener('click', handleLogin);
-    signupBtn.addEventListener('click', handleSignUp);
-    logoutBtn.addEventListener('click', handleLogout);
-
-    showSignup.addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('Show signup clicked');
-      loginForm.classList.add('hidden');
-      signupForm.classList.remove('hidden');
-      hideError(authError);
-      hideError(authSuccess);
-    });
-
-    showLogin.addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('Show login clicked');
-      loginForm.classList.remove('hidden');
-      signupForm.classList.add('hidden');
-      hideError(authError);
-      hideError(authSuccess);
-    });
-
-    sendBtn.addEventListener('click', sendMessage);
-
-    msgInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    customerFilter.addEventListener('change', (e) => {
-      currentCustomerId = e.target.value || null;
-      loadMessages();
-    });
-
-    modalSave.addEventListener('click', savePhoneNumber);
-    modalClose.addEventListener('click', hidePhoneModal);
-    modalPhone.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        savePhoneNumber();
-      }
-    });
-
-    // Check existing session
-    (async function checkSession() {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        showLoading();
-        await initDashboard(data.session.user);
-      } else {
-        setAuthView(true);
-      }
-    })();
-
-    console.log('✅ FedPromptly dashboard ready.');
+  // ============================================================
+  //  AUTH STATE LISTENER FOR ORDER TAB
+  // ============================================================
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    const user = session?.user;
+    if (user) {
+      await loadOrderDashboard(user);
+    } else {
+      // Reset order tab to auth view
+      orderAuth.style.display = 'flex';
+      orderPhoneModal.classList.remove('active');
+      orderChat.classList.remove('active');
+      orderAdminView.classList.remove('active');
+      orderStatus.textContent = '🔴 Offline';
+      orderStatus.style.color = '#ef4444';
+      showLoading(false);
+    }
   });
+
+  // ============================================================
+  //  CHECK EXISTING SESSION ON LOAD
+  // ============================================================
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await loadOrderDashboard(session.user);
+  } else {
+    orderAuth.style.display = 'flex';
+    orderPhoneModal.classList.remove('active');
+    orderChat.classList.remove('active');
+    orderAdminView.classList.remove('active');
+    orderStatus.textContent = '🔴 Offline';
+    orderStatus.style.color = '#ef4444';
+  }
+
+  // ============================================================
+  //  DEFAULT HOME
+  // ============================================================
+  let hasActive = false;
+  document.querySelectorAll('.tab-content').forEach(t => { if (t.classList.contains('active')) hasActive = true; });
+  if (!hasActive) switchTab('home');
+
+  // ============================================================
+  //  MAGNETIC SNAPPING (bottom nav)
+  // ============================================================
+  const bottomNav = document.getElementById('bottomNav');
+  const dragHandle = document.getElementById('navDragHandle');
+  let isDragging = false;
+  let startY = 0;
+
+  dragHandle.addEventListener('mousedown', startDrag);
+  dragHandle.addEventListener('touchstart', startDrag, { passive: true });
+
+  function startDrag(e) {
+    isDragging = true;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+    startY = clientY;
+    bottomNav.style.transition = 'none';
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('touchmove', onDrag, { passive: true });
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+  }
+
+  function onDrag(e) {
+    if (!isDragging) return;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+    const delta = clientY - startY;
+    const maxDrag = 120;
+    const dragPercent = Math.min(Math.max(delta / maxDrag, -1), 1);
+    if (dragPercent > 0) {
+      bottomNav.style.transform = 'translateY(' + (dragPercent * 100) + '%)';
+    } else {
+      bottomNav.style.transform = 'translateY(0)';
+    }
+  }
+
+  function endDrag() {
+    if (!isDragging) return;
+    isDragging = false;
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('touchmove', onDrag);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchend', endDrag);
+    bottomNav.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)';
+    const transform = bottomNav.style.transform;
+    const match = transform.match(/translateY\(([\d.]+)%\)/);
+    if (match) {
+      const percent = parseFloat(match[1]);
+      if (percent > 40) {
+        bottomNav.classList.add('snap-down');
+        bottomNav.classList.remove('snap-up');
+      } else {
+        bottomNav.classList.remove('snap-down');
+        bottomNav.classList.add('snap-up');
+      }
+    }
+    bottomNav.style.transform = '';
+  }
+
+  console.log('🚀 Fed Jumper – Subscribe tab redesigned with 3 large vertical tiers and hidden payment methods.');
 </script>
 </body>
 </html>
